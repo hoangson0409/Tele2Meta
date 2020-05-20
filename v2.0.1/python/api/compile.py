@@ -1,6 +1,6 @@
 import os
 
-path2 = 'C:\\Users\\Admin\\Downloads\\dwx-zeromq-connector-master\\dwx-zeromq-connector-master\\v2.0.1\\python\\api'
+path2 = 'C:\\Users\\Admin\\Downloads\\dwx-zeromq-connector-master\\v2.0.1\\python\\api'
 
 os.chdir(path2)
 
