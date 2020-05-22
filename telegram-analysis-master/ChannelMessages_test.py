@@ -91,8 +91,11 @@ async def main(phone):
 
     #with open('channel_messages.json', 'w') as outfile:
         #json.dump(all_messages, outfile, cls=DateTimeEncoder)
-        return all_messages
+    #print(all_messages)
+    return all_messages
 
 with client:
     everymess = client.loop.run_until_complete(main(phone))
+    print('here is everymess variable')
     print(everymess)
+    
