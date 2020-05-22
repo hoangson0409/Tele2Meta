@@ -65,7 +65,7 @@ async def main(phone):
     limit = 1
     all_messages = []
     total_messages = 0
-    total_count_limit = 0
+    total_count_limit = 1
 
     while True:
         print("Current Offset ID is:", offset_id, "; Total Messages:", total_messages)
