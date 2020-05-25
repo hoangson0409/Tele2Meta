@@ -31,9 +31,10 @@ my_trade3['_lots'] = 0.01
 my_trade3['_magic']= 123456
 my_trade3['_ticket']= 0
 
+
 def trade_sender(_exec_dict):
 	_lock = threading.Lock()
-	
+
 	dwx = DWX_ZeroMQ_Connector()
 
 	_lock.acquire()
@@ -46,17 +47,15 @@ def trade_sender(_exec_dict):
 
 
 
-def main():
+if __name__ == '__main__':
+	
+	trade2_sender = threading.Thread(target=trade_sender,args = (my_trade2,))
+	trade3_sender = threading.Thread(target=trade_sender,args = (my_trade3,))
+	trade2_sender.start()
+	trade3_sender.start()
+	trade2_sender.join()
+	trade3_sender.join()
 
-	trade2_sender = threading.Thread(target=trade_sender,args = (my_trade2))
-    trade3_sender = threading.Thread(target=trade_sender,args = (my_trade3))
 
-    trade2_sender.start()
-    trade3_sender.start()
-
-    trade2_sender.join()
-    trade3_sender.join()
-
-main()
 
 
