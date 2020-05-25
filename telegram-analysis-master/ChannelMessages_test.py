@@ -9,8 +9,10 @@ from telethon.tl.functions.messages import (GetHistoryRequest)
 from telethon.tl.types import (
     PeerChannel
 )
+import numpy as np
 
-
+#########################################################################################################################################
+######################################################################################################################################
 # some functions to parse json date
 class DateTimeEncoder(json.JSONEncoder):
     def default(self, o):
@@ -23,6 +25,70 @@ class DateTimeEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, o)
 
 
+def deEmojify(inputString):
+    return inputString.encode('ascii', 'ignore').decode('ascii')
+
+#FUNCTION TO ENCODE BUY AND SELL
+def orderTypeEncode(string):
+    if string == 'BUY':
+        return 0
+    elif string == "SELL":
+        return 1
+
+#FUNCTION TO CONVERT PRICE TO POINTS
+def priceToPoints(entry,another,symbol):
+    if 'JPY' in symbol:
+        point_value = 0.001
+    else:
+        point_value = 0.00001
+    return np.int(np.abs(another-entry) / point_value)
+ 
+def text_to_tradedict(text):
+
+    symbol = text.split()[0]
+    entry = float(deEmojify(text.split()[3]))
+    SL = float(deEmojify(text.split()[5]))
+    TP1 = float(deEmojify(text.split()[7]))
+    TP2 = float(deEmojify(text.split()[9]))
+    TP3 = float(deEmojify(text.split()[11]))
+
+    my_trade1 = {}
+    my_trade1['_action'] = 'OPEN'
+    my_trade1['_type'] = orderTypeEncode(text.split()[1])
+    my_trade1['_symbol'] = symbol
+    my_trade1['_price'] = 0.0
+    my_trade1['_SL'] = priceToPoints(entry,SL,symbol)
+    my_trade1['_TP'] = priceToPoints(entry,TP1,symbol)
+    my_trade1['_lots'] = 0.01
+    my_trade1['_magic']= 123456
+    my_trade1['_ticket']= 0
+
+    my_trade2 = {}
+    my_trade2['_action'] = 'OPEN'
+    my_trade2['_type'] = orderTypeEncode(text.split()[1])
+    my_trade2['_symbol'] = symbol
+    my_trade2['_price'] = 0.0
+    my_trade2['_SL'] = priceToPoints(entry,SL,symbol)
+    my_trade2['_TP'] = priceToPoints(entry,TP2,symbol)
+    my_trade2['_lots'] = 0.01
+    my_trade2['_magic']= 123456
+    my_trade2['_ticket']= 0
+
+    my_trade3 = {}
+    my_trade3['_action'] = 'OPEN'
+    my_trade3['_type'] = orderTypeEncode(text.split()[1])
+    my_trade3['_symbol'] = symbol
+    my_trade3['_price'] = 0.0
+    my_trade3['_SL'] = priceToPoints(entry,SL,symbol)
+    my_trade3['_TP'] = priceToPoints(entry,TP3,symbol)
+    my_trade3['_lots'] = 0.01
+    my_trade3['_magic']= 123456
+    my_trade3['_ticket']= 0
+
+    return [my_trade1,my_trade2,my_trade3]
+
+#############################################################################################################
+#############################################################################################################
 # Reading Configs
 config = configparser.ConfigParser()
 config.read("config.ini")
@@ -38,6 +104,8 @@ username = config['Telegram']['username']
 
 # Create the client and connect
 client = TelegramClient(username, api_id, api_hash)
+
+
 
 async def main(phone):
     await client.start()
@@ -92,10 +160,18 @@ async def main(phone):
     #with open('channel_messages.json', 'w') as outfile:
         #json.dump(all_messages, outfile, cls=DateTimeEncoder)
     #print(all_messages)
-    return all_messages
+    latest_message_text = all_messages[0]['message']
+    trade_dict_list = text_to_tradedict(latest_message_text)
+    return trade_dict_list
+   
 
+
+
+
+####################################################################################
 with client:
     everymess = client.loop.run_until_complete(main(phone))
+    
     print('here is everymess variable')
     print(everymess)
     
