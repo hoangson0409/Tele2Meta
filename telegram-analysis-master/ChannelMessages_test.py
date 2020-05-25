@@ -11,8 +11,9 @@ from telethon.tl.types import (
 )
 import numpy as np
 
-#########################################################################################################################################
-######################################################################################################################################
+#############################################################################################################
+###########  MODIFIABLE PART DEPENDING ON EACH CHANNEL ######################################################
+#############################################################################################################
 # some functions to parse json date
 class DateTimeEncoder(json.JSONEncoder):
     def default(self, o):
@@ -88,6 +89,7 @@ def text_to_tradedict(text):
     return [my_trade1,my_trade2,my_trade3]
 
 #############################################################################################################
+###########  MODIFIABLE PART DEPENDING ON EACH CHANNEL ######################################################
 #############################################################################################################
 # Reading Configs
 config = configparser.ConfigParser()
@@ -107,7 +109,7 @@ client = TelegramClient(username, api_id, api_hash)
 
 
 
-async def main(phone):
+async def execute(phone):
     await client.start()
     print("Client Created")
     # Ensure you're authorized
@@ -149,7 +151,7 @@ async def main(phone):
         ))
         if not history.messages:
             break
-        messages = history.messages
+        messages = history.messages 
         for message in messages:
             all_messages.append(message.to_dict())
         offset_id = messages[len(messages) - 1].id
@@ -160,9 +162,17 @@ async def main(phone):
     #with open('channel_messages.json', 'w') as outfile:
         #json.dump(all_messages, outfile, cls=DateTimeEncoder)
     #print(all_messages)
-    latest_message_text = all_messages[0]['message']
-    trade_dict_list = text_to_tradedict(latest_message_text)
-    return trade_dict_list
+
+    #######################################################################
+    #Conditions to filter only trade signal
+    #Must be a message
+    #First word of message must be 5 to 6 letters
+    #Must contain the word buy or sell in message content 
+    if all_messages[0]['_'] == "Message"  and 5 <= len(all_messages[0]['message'].split()[0]) <= 6 and ('BUY' in all_messages[0]['message'] or 'SELL' in all_messages[0]['message']):
+
+        latest_message_text = all_messages[0]['message']
+        trade_dict_list = text_to_tradedict(latest_message_text)
+        return trade_dict_list
    
 
 
@@ -170,7 +180,7 @@ async def main(phone):
 
 ####################################################################################
 with client:
-    everymess = client.loop.run_until_complete(main(phone))
+    everymess = client.loop.run_until_complete(execute(phone))
     
     print('here is everymess variable')
     print(everymess)
