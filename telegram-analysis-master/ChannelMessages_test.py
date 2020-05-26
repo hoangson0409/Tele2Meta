@@ -11,6 +11,15 @@ from telethon.tl.types import (
 )
 import numpy as np
 
+import os
+
+path = 'C:\\Users\\shawn\\Downloads\\dwx-zeromq-connector-master\\dwx-zeromq-connector-master\\v2.0.1\\python\\api'
+
+os.chdir(path2)
+
+from DWX_ZeroMQ_Connector_v2_0_1_RC8 import DWX_ZeroMQ_Connector
+import threading
+
 #############################################################################################################
 ###########  MODIFIABLE PART DEPENDING ON EACH CHANNEL ######################################################
 #############################################################################################################
@@ -91,7 +100,23 @@ def text_to_tradedict(text):
 #############################################################################################################
 ###########  MODIFIABLE PART DEPENDING ON EACH CHANNEL ######################################################
 #############################################################################################################
+
+def trade_sender(_exec_dict):
+    
+    _lock = threading.Lock()
+
+    dwx = DWX_ZeroMQ_Connector()
+
+    _lock.acquire()
+
+    response = dwx._DWX_MTX_NEW_TRADE_(_order=_exec_dict)
+
+    _lock.release()
+
+
 # Reading Configs
+path2 = 'C:\\Users\\shawn\\dwx-zeromq-connector-master\\dwx-zeromq-connector-master\\telegram-analysis-master'
+os.chdir(path2)
 config = configparser.ConfigParser()
 config.read("config.ini")
 
@@ -172,6 +197,7 @@ async def execute(phone):
     if all_messages[0]['_'] == "Message"  and 5 <= len(all_messages[0]['message'].split()[0]) <= 6 and ('BUY' in all_messages[0]['message'] or 'SELL' in all_messages[0]['message']) and all_messages[0]['id'] != latest_message_id:
 
         latest_message_text = all_messages[0]['message']
+
         trade_dict_list = text_to_tradedict(latest_message_text)
 
         latest_message_id = all_messages[0]['id'] 
@@ -184,8 +210,20 @@ async def execute(phone):
 
 ####################################################################################
 with client:
-    everymess = client.loop.run_until_complete(execute(phone))
+    three_trades_dict = client.loop.run_until_complete(execute(phone))
+
+    trade1_sender = threading.Thread(target=trade_sender,args = (three_trades_dict[0]))
+    trade2_sender = threading.Thread(target=trade_sender,args = (three_trades_dict[1]))
+    trade3_sender = threading.Thread(target=trade_sender,args = (three_trades_dict[2]))
+
+    trade1_sender.start()
+    trade2_sender.start()
+    trade3_sender.start()
+
+    trade1_sender.join()
+    trade2_sender.join()
+    trade3_sender.join()
+
+
     
-    print('here is everymess variable')
-    print(everymess)
     
