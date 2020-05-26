@@ -167,11 +167,15 @@ async def execute(phone):
     #Conditions to filter only trade signal
     #Must be a message
     #First word of message must be 5 to 6 letters
-    #Must contain the word buy or sell in message content 
-    if all_messages[0]['_'] == "Message"  and 5 <= len(all_messages[0]['message'].split()[0]) <= 6 and ('BUY' in all_messages[0]['message'] or 'SELL' in all_messages[0]['message']):
+    #Must contain the word buy or sell in message content
+    latest_message_id = 0 
+    if all_messages[0]['_'] == "Message"  and 5 <= len(all_messages[0]['message'].split()[0]) <= 6 and ('BUY' in all_messages[0]['message'] or 'SELL' in all_messages[0]['message']) and all_messages[0]['id'] != latest_message_id:
 
         latest_message_text = all_messages[0]['message']
         trade_dict_list = text_to_tradedict(latest_message_text)
+
+        latest_message_id = all_messages[0]['id'] 
+
         return trade_dict_list
    
 
