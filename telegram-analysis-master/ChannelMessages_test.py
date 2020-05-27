@@ -13,7 +13,7 @@ import numpy as np
 
 import os
 
-path = 'C:\\Users\\shawn\\Downloads\\dwx-zeromq-connector-master\\dwx-zeromq-connector-master\\v2.0.1\\python\\api'
+path = 'C:\\Users\\Admin\\Downloads\\dwx-zeromq-connector-master\\v2.0.1\\python\\api'
 
 os.chdir(path2)
 
@@ -115,7 +115,8 @@ def trade_sender(_exec_dict):
 
 
 # Reading Configs
-path2 = 'C:\\Users\\shawn\\dwx-zeromq-connector-master\\dwx-zeromq-connector-master\\telegram-analysis-master'
+path2 = 'C:\\Users\\Admin\\Downloads\\dwx-zeromq-connector-master\\telegram-analysis-master'
+
 os.chdir(path2)
 config = configparser.ConfigParser()
 config.read("config.ini")
