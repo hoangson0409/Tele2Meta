@@ -48,7 +48,7 @@ def trade_sender(_exec_dict):
 
 
 if __name__ == '__main__':
-	
+	print(my_trade3)
 	trade2_sender = threading.Thread(target=trade_sender,args = (my_trade2,))
 	trade3_sender = threading.Thread(target=trade_sender,args = (my_trade3,))
 	trade2_sender.start()

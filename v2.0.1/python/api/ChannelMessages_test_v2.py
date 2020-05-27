@@ -218,7 +218,9 @@ async def execute(phone):
 ####################################################################################
 with client:
     three_trades_dict = client.loop.run_until_complete(execute(phone))
-
+    # print(three_trades_dict)
+    # print('#########################################')
+    # print(three_trades_dict[0])
     trade1_sender = threading.Thread(target=trade_sender,args = (three_trades_dict[0],))
     trade2_sender = threading.Thread(target=trade_sender,args = (three_trades_dict[1],))
     trade3_sender = threading.Thread(target=trade_sender,args = (three_trades_dict[2],))
