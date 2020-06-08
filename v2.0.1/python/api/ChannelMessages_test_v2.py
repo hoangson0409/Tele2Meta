@@ -173,7 +173,7 @@ async def execute(phone,latest_message_id):
     # else:
     #     entity = user_input_channel
 
-    my_channel = await client.get_entity(entity)
+    my_channel = await client.get_input_entity(entity)
 
     offset_id = 0
     limit = 1
