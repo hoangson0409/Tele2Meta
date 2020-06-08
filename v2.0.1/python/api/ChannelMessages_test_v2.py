@@ -231,23 +231,21 @@ async def execute(phone,latest_message_id):
    
 
 
-
-
+####################################################################################
+########MAIN PROGRAM BE RUNNING HERE################################################
 ####################################################################################
 global latest_message_id 
 latest_message_id = 0
 
 while True:
     with client:
-
+        
         result = client.loop.run_until_complete(execute(phone,latest_message_id))
 
         if result is not None:
+
             three_trades_dict = result[0]
             
-            # print(three_trades_dict)
-            # print('#########################################')
-            # print(three_trades_dict[0])
             trade1_sender = threading.Thread(target=trade_sender,args = (three_trades_dict[0],))
             trade2_sender = threading.Thread(target=trade_sender,args = (three_trades_dict[1],))
             trade3_sender = threading.Thread(target=trade_sender,args = (three_trades_dict[2],))
@@ -260,10 +258,13 @@ while True:
             trade2_sender.join()
             trade3_sender.join()
             latest_message_id = result[1]
+            
+            time.sleep(30)
+
         else:
+            
+            time.sleep(30)
             continue
-          
-        time.sleep(60)
 
     continue
 
