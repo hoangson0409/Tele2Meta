@@ -23,6 +23,7 @@ from telethon.tl.types import (
     PeerChannel
 )
 import numpy as np
+import time
 
 
 
@@ -103,10 +104,6 @@ def text_to_tradedict(text):
 
     return [my_trade1,my_trade2,my_trade3]
 
-#############################################################################################################
-###########  MODIFIABLE PART DEPENDING ON EACH CHANNEL ######################################################
-#############################################################################################################
-
 def trade_sender(_exec_dict):
     
     _lock = threading.Lock()
@@ -118,6 +115,20 @@ def trade_sender(_exec_dict):
     response = dwx._DWX_MTX_NEW_TRADE_(_order=_exec_dict)
 
     _lock.release()
+
+def is_tradesignal(all_messages,latest_message_id):
+    if  (
+        all_messages[0]['_'] == "Message"  and  #Must be a message
+        5 <= len(all_messages[0]['message'].split()[0]) <= 6 and #First word of message must be 5 to 6 letters
+        ('BUY' in all_messages[0]['message'] or 'SELL' in all_messages[0]['message']) and #Must contain the word buy or sell in message content
+        all_messages[0]['id'] != latest_message_id #Must have different ID from the last message
+        ):
+        return True
+    else:
+        return False 
+#############################################################################################################
+########### END OF MODIFIABLE PART DEPENDING ON EACH CHANNEL ################################################
+#############################################################################################################
 
 
 # Reading Configs
@@ -135,6 +146,7 @@ api_hash = str(api_hash)
 
 phone = config['Telegram']['phone']
 username = config['Telegram']['username']
+channel = config['Telegram']['channel']
 
 # Create the client and connect
 client = TelegramClient(username, api_id, api_hash)
@@ -154,12 +166,12 @@ async def execute(phone):
 
     me = await client.get_me()
 
-    user_input_channel = input('enter entity(telegram URL or entity id):')
-
-    if user_input_channel.isdigit():
-        entity = PeerChannel(int(user_input_channel))
-    else:
-        entity = user_input_channel
+    user_input_channel = channel
+    entity = user_input_channel
+    # if user_input_channel.isdigit():
+    #     entity = PeerChannel(int(user_input_channel))
+    # else:
+    #     entity = user_input_channel
 
     my_channel = await client.get_entity(entity)
 
@@ -197,11 +209,12 @@ async def execute(phone):
 
     #######################################################################
     #Conditions to filter only trade signal
-    #Must be a message
-    #First word of message must be 5 to 6 letters
-    #Must contain the word buy or sell in message content
+    
+    
+    
     latest_message_id = 0 
-    if all_messages[0]['_'] == "Message"  and 5 <= len(all_messages[0]['message'].split()[0]) <= 6 and ('BUY' in all_messages[0]['message'] or 'SELL' in all_messages[0]['message']) and all_messages[0]['id'] != latest_message_id:
+
+    if  is_tradesignal(all_messages,latest_message_id):
 
         latest_message_text = all_messages[0]['message']
 
@@ -216,22 +229,27 @@ async def execute(phone):
 
 
 ####################################################################################
-with client:
-    three_trades_dict = client.loop.run_until_complete(execute(phone))
-    # print(three_trades_dict)
-    # print('#########################################')
-    # print(three_trades_dict[0])
-    trade1_sender = threading.Thread(target=trade_sender,args = (three_trades_dict[0],))
-    trade2_sender = threading.Thread(target=trade_sender,args = (three_trades_dict[1],))
-    trade3_sender = threading.Thread(target=trade_sender,args = (three_trades_dict[2],))
+while True:
+    with client:
+        three_trades_dict = client.loop.run_until_complete(execute(phone))
+        # print(three_trades_dict)
+        # print('#########################################')
+        # print(three_trades_dict[0])
+        trade1_sender = threading.Thread(target=trade_sender,args = (three_trades_dict[0],))
+        trade2_sender = threading.Thread(target=trade_sender,args = (three_trades_dict[1],))
+        trade3_sender = threading.Thread(target=trade_sender,args = (three_trades_dict[2],))
 
-    trade1_sender.start()
-    trade2_sender.start()
-    trade3_sender.start()
+        trade1_sender.start()
+        trade2_sender.start()
+        trade3_sender.start()
 
-    trade1_sender.join()
-    trade2_sender.join()
-    trade3_sender.join()
+        trade1_sender.join()
+        trade2_sender.join()
+        trade3_sender.join()
+
+        time.sleep(2)
+
+    continue
 
 
     
