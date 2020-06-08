@@ -263,7 +263,7 @@ while True:
         else:
             continue
           
-        time.sleep(2)
+        time.sleep(60)
 
     continue
 
