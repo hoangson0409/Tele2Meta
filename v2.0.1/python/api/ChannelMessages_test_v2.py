@@ -150,10 +150,10 @@ channel = config['Telegram']['channel']
 
 # Create the client and connect
 client = TelegramClient(username, api_id, api_hash)
+#latest_message_id = 0
 
 
-
-async def execute(phone):
+async def execute(phone,latest_message_id):
     await client.start()
     print("Client Created")
     # Ensure you're authorized
@@ -212,7 +212,7 @@ async def execute(phone):
     
     
     
-    latest_message_id = 0 
+     
 
     if  is_tradesignal(all_messages,latest_message_id):
 
@@ -222,16 +222,28 @@ async def execute(phone):
 
         latest_message_id = all_messages[0]['id'] 
 
-        return trade_dict_list
+        return (trade_dict_list,latest_message_id)
+
+    
    
 
 
 
 
 ####################################################################################
+global latest_message_id 
+latest_message_id = 0
+
 while True:
     with client:
-        three_trades_dict = client.loop.run_until_complete(execute(phone))
+        
+        print("FIRST MESSAGE ID IS ", latest_message_id)
+        result = client.loop.run_until_complete(execute(phone,latest_message_id))
+
+        three_trades_dict = result[0]
+        
+
+
         # print(three_trades_dict)
         # print('#########################################')
         # print(three_trades_dict[0])
@@ -247,6 +259,9 @@ while True:
         trade2_sender.join()
         trade3_sender.join()
 
+        latest_message_id = result[1]
+        
+        print("SECOND MESSAGE ID IS ", latest_message_id)   
         time.sleep(2)
 
     continue
