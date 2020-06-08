@@ -150,7 +150,7 @@ channel = config['Telegram']['channel']
 
 # Create the client and connect
 client = TelegramClient(username, api_id, api_hash)
-#latest_message_id = 0
+
 
 
 async def execute(phone,latest_message_id):
@@ -224,6 +224,9 @@ async def execute(phone,latest_message_id):
 
         return (trade_dict_list,latest_message_id)
 
+    else:
+        return None
+
     
    
 
@@ -236,32 +239,30 @@ latest_message_id = 0
 
 while True:
     with client:
-        
-        print("FIRST MESSAGE ID IS ", latest_message_id)
+
         result = client.loop.run_until_complete(execute(phone,latest_message_id))
 
-        three_trades_dict = result[0]
-        
+        if result is not None:
+            three_trades_dict = result[0]
+            
+            # print(three_trades_dict)
+            # print('#########################################')
+            # print(three_trades_dict[0])
+            trade1_sender = threading.Thread(target=trade_sender,args = (three_trades_dict[0],))
+            trade2_sender = threading.Thread(target=trade_sender,args = (three_trades_dict[1],))
+            trade3_sender = threading.Thread(target=trade_sender,args = (three_trades_dict[2],))
 
+            trade1_sender.start()
+            trade2_sender.start()
+            trade3_sender.start()
 
-        # print(three_trades_dict)
-        # print('#########################################')
-        # print(three_trades_dict[0])
-        trade1_sender = threading.Thread(target=trade_sender,args = (three_trades_dict[0],))
-        trade2_sender = threading.Thread(target=trade_sender,args = (three_trades_dict[1],))
-        trade3_sender = threading.Thread(target=trade_sender,args = (three_trades_dict[2],))
-
-        trade1_sender.start()
-        trade2_sender.start()
-        trade3_sender.start()
-
-        trade1_sender.join()
-        trade2_sender.join()
-        trade3_sender.join()
-
-        latest_message_id = result[1]
-        
-        print("SECOND MESSAGE ID IS ", latest_message_id)   
+            trade1_sender.join()
+            trade2_sender.join()
+            trade3_sender.join()
+            latest_message_id = result[1]
+        else:
+            continue
+          
         time.sleep(2)
 
     continue
