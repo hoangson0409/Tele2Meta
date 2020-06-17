@@ -29,7 +29,7 @@ path3 = 'C:\\Users\\Admin\\Downloads\\dwx-zeromq-connector-master\\telegram-anal
 
 os.chdir(path3)
 config = configparser.ConfigParser()
-config.read("config.ini")
+config.read("config_phu.ini")
 
 # Setting configuration values
 api_id = config['Telegram']['api_id']
