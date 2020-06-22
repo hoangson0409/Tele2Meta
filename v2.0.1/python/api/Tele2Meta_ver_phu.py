@@ -21,9 +21,6 @@ import time
 from Tele2Meta_support_function import deEmojify, orderTypeEncode, priceToPoints,text_to_tradedict, trade_sender, is_tradesignal
 
 
-
-
-
 # Reading Configs
 path3 = 'C:\\Users\\Admin\\Downloads\\dwx-zeromq-connector-master\\telegram-analysis-master'
 
@@ -96,17 +93,14 @@ async def execute(phone,latest_message_id):
         if total_count_limit != 0 and total_messages >= total_count_limit:
             break
 
-    #with open('channel_messages.json', 'w') as outfile:
-        #json.dump(all_messages, outfile, cls=DateTimeEncoder)
-    #print(all_messages)
+
 
     #######################################################################
     #Conditions to filter only trade signal
     
-    
-    
-     
 
+    
+   
     if  is_tradesignal(all_messages,latest_message_id):
 
         latest_message_text = all_messages[0]['message']
