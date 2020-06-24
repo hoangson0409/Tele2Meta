@@ -21,12 +21,15 @@ import time
 from Tele2Meta_support_function import deEmojify, orderTypeEncode, priceToPoints,text_to_tradedict, trade_sender, is_tradesignal
 
 
+
+
+
 # Reading Configs
 path3 = 'C:\\Users\\Admin\\Downloads\\dwx-zeromq-connector-master\\telegram-analysis-master'
 
 os.chdir(path3)
 config = configparser.ConfigParser()
-config.read("config_phu.ini")
+config.read("config.ini")
 
 # Setting configuration values
 api_id = config['Telegram']['api_id']
@@ -57,7 +60,7 @@ async def execute(phone,latest_message_id):
     me = await client.get_me()
 
     user_input_channel = channel
-    entity = PeerChannel(int(user_input_channel))
+    entity = user_input_channel
     # if user_input_channel.isdigit():
     #     entity = PeerChannel(int(user_input_channel))
     # else:
@@ -93,14 +96,17 @@ async def execute(phone,latest_message_id):
         if total_count_limit != 0 and total_messages >= total_count_limit:
             break
 
-
+    #with open('channel_messages.json', 'w') as outfile:
+        #json.dump(all_messages, outfile, cls=DateTimeEncoder)
+    #print(all_messages)
 
     #######################################################################
     #Conditions to filter only trade signal
     
-
     
-    #print(all_messages)
+    
+     
+
     if  is_tradesignal(all_messages,latest_message_id):
 
         latest_message_text = all_messages[0]['message']
@@ -132,18 +138,31 @@ while True:
         if result is not None:
 
             three_trades_dict = result[0]
+            thread_list = []
+
+            for i in range(len(three_trades_dict)):
+                t = threading.Thread(name="{}_Trader".format(i),target=trade_sender,args = (three_trades_dict[i],))
+                t.daemon = True
+                t.start()
+                thread_list.append(t)
             
-            trade1_sender = threading.Thread(target=trade_sender,args = (three_trades_dict[0],))
-            trade2_sender = threading.Thread(target=trade_sender,args = (three_trades_dict[1],))
-            trade3_sender = threading.Thread(target=trade_sender,args = (three_trades_dict[2],))
+                
+            for i in thread_list:
+                i.join()
+                
+                
+            
+#             trade1_sender = threading.Thread(target=trade_sender,args = (three_trades_dict[0],))
+#             trade2_sender = threading.Thread(target=trade_sender,args = (three_trades_dict[1],))
+#             trade3_sender = threading.Thread(target=trade_sender,args = (three_trades_dict[2],))
 
-            trade1_sender.start()
-            trade2_sender.start()
-            trade3_sender.start()
+#             trade1_sender.start()
+#             trade2_sender.start()
+#             trade3_sender.start()
 
-            trade1_sender.join()
-            trade2_sender.join()
-            trade3_sender.join()
+#             trade1_sender.join()
+#             trade2_sender.join()
+#             trade3_sender.join()
             latest_message_id = result[1]
             
             time.sleep(30)
