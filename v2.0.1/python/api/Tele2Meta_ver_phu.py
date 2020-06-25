@@ -18,7 +18,7 @@ from telethon.tl.types import (
 )
 import numpy as np
 import time
-from Tele2Meta_support_function import deEmojify, orderTypeEncode, priceToPoints,text_to_tradedict, trade_sender, is_tradesignal
+from Tele2Meta_support_function_Update1 import deEmojify, order_type_encoder,symbol_identifier, priceToPoints,text_to_tradedict_2, trade_sender, is_tradesignal,hasNumbers
 
 
 # Reading Configs
@@ -105,7 +105,7 @@ async def execute(phone,latest_message_id):
 
         latest_message_text = all_messages[0]['message']
 
-        trade_dict_list = text_to_tradedict(latest_message_text)
+        trade_dict_list = text_to_tradedict_2(latest_message_text)
 
         latest_message_id = all_messages[0]['id'] 
 
@@ -131,19 +131,20 @@ while True:
 
         if result is not None:
 
-            three_trades_dict = result[0]
+            trades_dict = result[0]
+            thread_list = []
+
+            for i in range(len(trades_dict)):
+                t = threading.Thread(name="{}_Trader".format(i),target=trade_sender,args = (trades_dict[i],))
+                t.daemon = True
+                t.start()
+                thread_list.append(t)
             
-            trade1_sender = threading.Thread(target=trade_sender,args = (three_trades_dict[0],))
-            trade2_sender = threading.Thread(target=trade_sender,args = (three_trades_dict[1],))
-            trade3_sender = threading.Thread(target=trade_sender,args = (three_trades_dict[2],))
+                
+            for thr in thread_list:
+                thr.join()
 
-            trade1_sender.start()
-            trade2_sender.start()
-            trade3_sender.start()
 
-            trade1_sender.join()
-            trade2_sender.join()
-            trade3_sender.join()
             latest_message_id = result[1]
             
             time.sleep(30)
