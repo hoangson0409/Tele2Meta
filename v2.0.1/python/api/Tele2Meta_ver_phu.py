@@ -97,10 +97,16 @@ async def execute(phone,latest_message_id):
 
     #######################################################################
     #Conditions to filter only trade signal
+    #and a check part of last message
     
 
-    
-    #print(all_messages)
+    if "message" in all_messages[0].keys():
+        print('Here is the latest message: ', all_messages[0]['message']) 
+        print('#########################################################')
+    else:
+        print('Here is the something latest not message: ', all_messages[0])
+        print('#########################################################')
+
     if  is_tradesignal(all_messages,latest_message_id):
 
         latest_message_text = all_messages[0]['message']

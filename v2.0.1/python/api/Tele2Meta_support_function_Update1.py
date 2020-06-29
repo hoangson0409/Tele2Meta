@@ -10,7 +10,7 @@ def deEmojify(inputString):
     return inputString.encode('ascii', 'ignore').decode('ascii')
 
 #FUNCTION TO ENCODE BUY AND SELL
-pending_wordlist = ['pending','LIMIT','STOP','Limit','Stop','limit','stop']
+pending_wordlist = ['PENDING','Pending','pending','LIMIT','STOP','Limit','Stop','limit','stop']
 def order_type_encoder(text):
     text = deEmojify(text)
     for i in pending_wordlist:
@@ -97,7 +97,7 @@ def text_to_tradedict_2(text):
     
     
     for i in numeric_dict_list: 
-        if 'TP' in str(i.keys()):
+        if ('TP' in str(i.keys())) or ('Tp' in str(i.keys())) or ('tp' in str(i.keys())) :
             tp_dict_list.append(i) 
             
             
@@ -121,10 +121,12 @@ def text_to_tradedict_2(text):
                 if ('SL' in str(idx2.keys())) or ('Sl' in str(idx2.keys())) or ('sl' in str(idx2.keys())):
                     SL = np.float(list(idx2.values())[0])
 
-        TP = np.float(list(tp_dict_list[i].values())[0])
+        
         symbol = symbol_identifier(text)
 
         for i in range(number_of_trade):
+            TP = np.float(list(tp_dict_list[i].values())[0])
+
             my_trade = {}
             my_trade['_action'] = 'OPEN'  
             my_trade['_type'] = order_type_encoder(text)
@@ -164,13 +166,15 @@ def trade_sender(_exec_dict):
 
 
 def hasNumbers(inputString):
-...     return any(char.isdigit() for char in inputString)
+    return any(char.isdigit() for char in inputString)
 
 def is_tradesignal(all_messages,latest_message_id):
     if  (
         "message" in all_messages[0].keys() and  #Must be a message
         ('ENTRY' in all_messages[0]['message'] or 'Entry' in all_messages[0]['message']) and #MUST HAVE ENTRY or Entry
-        ('BUY' in all_messages[0]['message'] or 'SELL' in all_messages[0]['message']) and #Must contain the word buy or sell 
+        ('BUY' in all_messages[0]['message'] or 'SELL' in all_messages[0]['message']) and
+        ('Buy' in all_messages[0]['message'] or 'Sell' in all_messages[0]['message']) and
+        ('buy' in all_messages[0]['message'] or 'sell' in all_messages[0]['message']) and #Must contain the word buy or sell 
         hasNumbers(all_messages[0]['message']) and #Must have number within
         all_messages[0]['id'] != latest_message_id #Must have different ID from the last message
         ):
