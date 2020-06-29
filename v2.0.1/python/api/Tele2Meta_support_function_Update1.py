@@ -174,7 +174,7 @@ def is_tradesignal(all_messages,latest_message_id):
         ('ENTRY' in all_messages[0]['message'] or 'Entry' in all_messages[0]['message']) and #MUST HAVE ENTRY or Entry
         ('BUY' in all_messages[0]['message'] or 'SELL' in all_messages[0]['message'] or
         'Buy' in all_messages[0]['message'] or 'Sell' in all_messages[0]['message'] or
-        'buy' in all_messages[0]['message'] or 'sell' in all_messages[0]['message'] ) #Must contain the word buy or sell 
+        'buy' in all_messages[0]['message'] or 'sell' in all_messages[0]['message'] ) and  #Must contain the word buy or sell 
         hasNumbers(all_messages[0]['message']) and #Must have number within
         all_messages[0]['id'] != latest_message_id #Must have different ID from the last message
         ):
