@@ -1,11 +1,26 @@
 import numpy as np
 from DWX_ZeroMQ_Connector_v2_0_1_RC8 import DWX_ZeroMQ_Connector
 import threading
+import configparser
+import json
+import asyncio
+from datetime import date, datetime
 '''
 All supporting function for Tele2Meta - Modifiable for  each channel
 '''
 
 #FUNCTION TO REMOVE EMOJI FROM TEXT
+class DateTimeEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, datetime):
+            return o.isoformat()
+
+        if isinstance(o, bytes):
+            return list(o)
+
+        return json.JSONEncoder.default(self, o)
+
+        
 def deEmojify(inputString):
     return inputString.encode('ascii', 'ignore').decode('ascii')
 
@@ -181,6 +196,15 @@ def is_tradesignal(all_messages,latest_message_id):
         return True
     else:
         return False 
+
+def is_new_message(all_messages,latest_message_id):
+    if  (
+        "message" in all_messages[0].keys() and  #Must be a message
+        all_messages[0]['id'] != latest_message_id #Must have different ID from the last message
+        ):
+        return True
+    else:
+        return False
 #############################################################################################################
 ########### END OF MODIFIABLE PART DEPENDING ON EACH CHANNEL ################################################
 #############################################################################################################

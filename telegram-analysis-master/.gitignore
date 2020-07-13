@@ -10,3 +10,5 @@
 amiryousefi_it.session
 anaconda-project.yml
 *.json
+*.session
+*.session-journal

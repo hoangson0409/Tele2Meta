@@ -18,7 +18,7 @@ from telethon.tl.types import (
 )
 import numpy as np
 import time
-from Tele2Meta_support_function import deEmojify, orderTypeEncode, priceToPoints,text_to_tradedict, trade_sender, is_tradesignal, DateTimeEncoder
+from Tele2Meta_support_function import deEmojify, orderTypeEncode, priceToPoints,text_to_tradedict, trade_sender, is_tradesignal, DateTimeEncoder,is_new_message
 
 
 
@@ -97,39 +97,43 @@ async def execute(phone,latest_message_id,every_mess_since_on):
             break
 
     
-    if "message" in all_messages[0].keys():
-        print('Here is the latest message: ', all_messages[0]['message']) 
-        print('#########################################################')
-        every_mess_since_on.append(all_messages[0]['message'])
-
-        with open('channel_messages.json', 'w') as outfile:
-            json.dump(every_mess_since_on, outfile, cls=DateTimeEncoder)
-
-
-
-    
     #print(all_messages)
 
     #######################################################################
     #Conditions to filter only trade signal
-    
-    
-    
-     
-
-    if  is_tradesignal(all_messages,latest_message_id):
-
-        latest_message_text = all_messages[0]['message']
-
-        trade_dict_list = text_to_tradedict(latest_message_text)
-
-        latest_message_id = all_messages[0]['id'] 
-
-        return (trade_dict_list,latest_message_id)
+    if "message" in all_messages[0].keys():
+        print('Here is the latest message: ', all_messages[0]['message']) 
+        print('#########################################################')
+        
 
     else:
-        return None
+        print('Here is the something latest not message: ', all_messages[0])
+        print('#########################################################')
+    #############################################################################
+    #NEU CO THEM TIN NHAN MOI : IN THEM VAO CHANNEL MESSAGE
+    if is_new_message(all_messages,latest_message_id):    
+        every_mess_since_on.append(all_messages[0]['message'])
+        with open('channel_messages.json', 'w') as outfile:
+            json.dump(every_mess_since_on, outfile, cls=DateTimeEncoder)
 
+        if  is_tradesignal(all_messages,latest_message_id):
+
+            latest_message_text = all_messages[0]['message']
+
+            trade_dict_list = text_to_tradedict(latest_message_text)
+
+            latest_message_id = all_messages[0]['id']
+
+            return (trade_dict_list,latest_message_id)
+
+        else:
+            latest_message_id = all_messages[0]['id']
+            return (None,latest_message_id)
+
+    else:
+        latest_message_id = all_messages[0]['id']
+        return (None,latest_message_id)
+        
     
    
 
@@ -139,13 +143,15 @@ async def execute(phone,latest_message_id,every_mess_since_on):
 ####################################################################################
 global latest_message_id 
 latest_message_id = 0
+global every_mess_since_on
 every_mess_since_on = []
+
 while True:
     with client:
         
         result = client.loop.run_until_complete(execute(phone,latest_message_id,every_mess_since_on))
-
-        if result is not None:
+        
+        if result[0] is not None:
 
             three_trades_dict = result[0]
             
@@ -160,12 +166,13 @@ while True:
             trade1_sender.join()
             trade2_sender.join()
             trade3_sender.join()
-            latest_message_id = result[1]
             
+            latest_message_id = result[1]
+
             time.sleep(30)
 
         else:
-
+            latest_message_id = result[1]
             time.sleep(30)
             continue
 

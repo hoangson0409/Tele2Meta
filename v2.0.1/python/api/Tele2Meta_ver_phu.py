@@ -43,7 +43,7 @@ client = TelegramClient(username, api_id, api_hash)
 
 
 
-async def execute(phone,latest_message_id):
+async def execute(phone,latest_message_id,every_mess_since_on):
     await client.start()
     print("Client Created")
     # Ensure you're authorized
@@ -95,18 +95,31 @@ async def execute(phone,latest_message_id):
 
 
 
-    #######################################################################
+    ############################################################################################
     #Conditions to filter only trade signal
     #and a check part of last message
     
-
+    ############################################################################
+    #IN RA TIN NHAN CUOI CUNG
     if "message" in all_messages[0].keys():
         print('Here is the latest message: ', all_messages[0]['message']) 
         print('#########################################################')
+        
+
     else:
         print('Here is the something latest not message: ', all_messages[0])
         print('#########################################################')
+    #############################################################################
+    #NEU CO THEM TIN NHAN MOI : IN THEM VAO CHANNEL MESSAGE
+    if is_new_message(all_messages,latest_message_id):
+        every_mess_since_on.append(all_messages[0]['message'])
+        with open('channel_messages.json', 'w') as outfile:
+            json.dump(every_mess_since_on, outfile, cls=DateTimeEncoder)
+    else:
+        pass
 
+    ###########################################################################
+    #NEU LA TRADE SIGNAL THI SEND
     if  is_tradesignal(all_messages,latest_message_id):
 
         latest_message_text = all_messages[0]['message']
@@ -129,11 +142,12 @@ async def execute(phone,latest_message_id):
 ####################################################################################
 global latest_message_id 
 latest_message_id = 0
+every_mess_since_on = [] 
 
 while True:
     with client:
         
-        result = client.loop.run_until_complete(execute(phone,latest_message_id))
+        result = client.loop.run_until_complete(execute(phone,latest_message_id,every_mess_since_on))
 
         if result is not None:
 

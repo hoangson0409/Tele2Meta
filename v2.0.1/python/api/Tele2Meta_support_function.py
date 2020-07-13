@@ -104,6 +104,15 @@ def is_tradesignal(all_messages,latest_message_id):
         return True
     else:
         return False 
+
+def is_new_message(all_messages,latest_message_id):
+    if  (
+        "message" in all_messages[0].keys() and  #Must be a message
+        all_messages[0]['id'] != latest_message_id #Must have different ID from the last message
+        ):
+        return True
+    else:
+        return False
 #############################################################################################################
 ########### END OF MODIFIABLE PART DEPENDING ON EACH CHANNEL ################################################
 #############################################################################################################
