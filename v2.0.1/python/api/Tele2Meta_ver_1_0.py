@@ -18,7 +18,7 @@ from telethon.tl.types import (
 )
 import numpy as np
 import time
-from Tele2Meta_support_function import deEmojify, orderTypeEncode, priceToPoints,text_to_tradedict, trade_sender, is_tradesignal
+from Tele2Meta_support_function import deEmojify, orderTypeEncode, priceToPoints,text_to_tradedict, trade_sender, is_tradesignal, DateTimeEncoder
 
 
 
@@ -46,7 +46,7 @@ client = TelegramClient(username, api_id, api_hash)
 
 
 
-async def execute(phone,latest_message_id):
+async def execute(phone,latest_message_id,every_mess_since_on):
     await client.start()
     print("Client Created")
     # Ensure you're authorized
@@ -96,8 +96,18 @@ async def execute(phone,latest_message_id):
         if total_count_limit != 0 and total_messages >= total_count_limit:
             break
 
-    #with open('channel_messages.json', 'w') as outfile:
-        #json.dump(all_messages, outfile, cls=DateTimeEncoder)
+    
+    if "message" in all_messages[0].keys():
+        print('Here is the latest message: ', all_messages[0]['message']) 
+        print('#########################################################')
+        every_mess_since_on.append(all_messages[0]['message'])
+
+        with open('channel_messages.json', 'w') as outfile:
+            json.dump(every_mess_since_on, outfile, cls=DateTimeEncoder)
+
+
+
+    
     #print(all_messages)
 
     #######################################################################
@@ -129,11 +139,11 @@ async def execute(phone,latest_message_id):
 ####################################################################################
 global latest_message_id 
 latest_message_id = 0
-
+every_mess_since_on = []
 while True:
     with client:
         
-        result = client.loop.run_until_complete(execute(phone,latest_message_id))
+        result = client.loop.run_until_complete(execute(phone,latest_message_id,every_mess_since_on))
 
         if result is not None:
 

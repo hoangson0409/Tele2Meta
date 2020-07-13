@@ -1,10 +1,25 @@
 import numpy as np
 from DWX_ZeroMQ_Connector_v2_0_1_RC8 import DWX_ZeroMQ_Connector
 import threading
+import configparser
+import json
+import asyncio
+from datetime import date, datetime
 #############################################################################################################
 ###########  MODIFIABLE PART DEPENDING ON EACH CHANNEL ######################################################
 #############################################################################################################
 #ALL SUPPORTING FUNCTION
+
+class DateTimeEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, datetime):
+            return o.isoformat()
+
+        if isinstance(o, bytes):
+            return list(o)
+
+        return json.JSONEncoder.default(self, o)
+
 def deEmojify(inputString):
     return inputString.encode('ascii', 'ignore').decode('ascii')
 
