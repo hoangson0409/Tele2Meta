@@ -1,7 +1,7 @@
 import os
 
-path2 = 'C:\\Users\\Admin\\Downloads\\dwx-zeromq-connector-master\\v2.0.1\\python\\api'
-
+#path2 = 'C:\\Users\\Admin\\Downloads\\dwx-zeromq-connector-master\\v2.0.1\\python\\api'
+path2 = 'C:\\Users\\hoangson0409\\Downloads\\Tele2Meta\\v2.0.1\\python\\api'
 os.chdir(path2)
 
 from DWX_ZeroMQ_Connector_v2_0_1_RC8 import DWX_ZeroMQ_Connector
@@ -18,14 +18,16 @@ from telethon.tl.types import (
 )
 import numpy as np
 import time
-from Tele2Meta_support_function import deEmojify, orderTypeEncode, priceToPoints,text_to_tradedict, trade_sender, is_tradesignal
+from Tele2Meta_support_function_Update1 import deEmojify, order_type_encoder,symbol_identifier, priceToPoints,text_to_tradedict_2, trade_sender, is_tradesignal,hasNumbers,is_new_message,DateTimeEncoder
 
 
 
 
 
 # Reading Configs
-path3 = 'C:\\Users\\Admin\\Downloads\\dwx-zeromq-connector-master\\telegram-analysis-master'
+#path3 = 'C:\\Users\\Admin\\Downloads\\dwx-zeromq-connector-master\\telegram-analysis-master'
+path3 = 'C:\\Users\\hoangson0409\\Downloads\\Tele2Meta\\telegram-analysis-master'
+
 
 os.chdir(path3)
 config = configparser.ConfigParser()
@@ -111,7 +113,7 @@ async def execute(phone,latest_message_id):
 
         latest_message_text = all_messages[0]['message']
 
-        trade_dict_list = text_to_tradedict(latest_message_text)
+        trade_dict_list = text_to_tradedict_2(latest_message_text)
 
         latest_message_id = all_messages[0]['id'] 
 
