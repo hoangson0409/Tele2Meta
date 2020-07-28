@@ -46,7 +46,7 @@ symbol_list = ["EURUSD","EURCHF","EURAUD","EURCAD","EURNZD","EURJPY","EURGBP",
    "USDJPY","USDCAD","USDCHF",
    "AUDUSD","AUDCAD","AUDCHF","AUDJPY","AUDNZD",
    "CADCHF","CADJPY","CHFJPY","CHFTRY",
-   "GBPUSD","GBPJPY","GBPCAD","GBPCHF","GBPAUD","GBPNZD","XAUUSD","US30","USOIL","XTIUSD","GOLD"]
+   "GBPUSD","GBPJPY","GBPCAD","GBPCHF","GBPAUD","GBPNZD","XAUUSD","US30","USOIL","XTIUSD","GOLD",'USTEC']
 
 def symbol_identifier(text):
     for i in symbol_list:
@@ -70,6 +70,8 @@ def priceToPoints(entry,another,symbol):
         point_value = 0.001
     elif symbol == 'US30':
         point_value = 0.1
+    elif symbol == 'USTEC':
+        point_value = 0.01
     else:
         point_value = 0.00001
     return np.int(np.abs(another-entry) / point_value)
