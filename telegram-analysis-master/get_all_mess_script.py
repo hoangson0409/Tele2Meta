@@ -25,7 +25,7 @@ class DateTimeEncoder(json.JSONEncoder):
 
 # Reading Configs
 config = configparser.ConfigParser()
-config.read("config.ini")
+config.read("config_phu.ini")
 
 # Setting configuration values
 api_id = config['Telegram']['api_id']
@@ -35,7 +35,7 @@ api_hash = str(api_hash)
 
 phone = config['Telegram']['phone']
 username = config['Telegram']['username']
-
+channel = config['Telegram']['channel']
 # Create the client and connect
 client = TelegramClient(username, api_id, api_hash)
 
@@ -52,20 +52,18 @@ async def main(phone):
 
     me = await client.get_me()
 
-    user_input_channel = input('enter entity(telegram URL or entity id):')
+    user_input_channel = channel
 
-    if user_input_channel.isdigit():
-        entity = PeerChannel(int(user_input_channel))
-    else:
-        entity = user_input_channel
-
+    
+    entity = PeerChannel(int(user_input_channel))
+    
     my_channel = await client.get_entity(entity)
 
     offset_id = 0
-    limit = 1
+    limit = 100
     all_messages = []
     total_messages = 0
-    total_count_limit = 1
+    total_count_limit = 0
 
     while True:
         print("Current Offset ID is:", offset_id, "; Total Messages:", total_messages)
