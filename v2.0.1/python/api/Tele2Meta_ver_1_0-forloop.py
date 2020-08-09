@@ -18,11 +18,29 @@ from telethon.tl.types import (
 )
 import numpy as np
 import time
-from Tele2Meta_support_function_Update1 import deEmojify, order_type_encoder,symbol_identifier, priceToPoints,text_to_tradedict_2, trade_sender, is_tradesignal,hasNumbers,is_new_message,DateTimeEncoder
+from Tele2Meta_support_function_Update1 import deEmojify, order_type_encoder,symbol_identifier, priceToPoints,text_to_tradedict_2,  is_tradesignal,hasNumbers,is_new_message,DateTimeEncoder
+
+global dwx
+dwx = DWX_ZeroMQ_Connector()
+
+global _lock
+_lock = threading.RLock()
 
 
+def trade_sender(_exec_dict):
+    
+    _lock.acquire()
 
+    action = dwx._DWX_MTX_NEW_TRADE_(_order=_exec_dict)
 
+    _lock.release()
+
+def log_getter():
+    _lock.acquire()
+    resp = dwx._get_response_()
+    _lock.release()
+    print('RESP VAR')
+    print(resp)
 
 # Reading Configs
 #path3 = 'C:\\Users\\Admin\\Downloads\\dwx-zeromq-connector-master\\telegram-analysis-master'
@@ -144,16 +162,16 @@ while True:
 
             for i in range(len(three_trades_dict)):
                 t = threading.Thread(name="{}_Trader".format(i),target=trade_sender,args = (three_trades_dict[i],))
-                t.daemon = True
+                print('here we declare the thread')
+                
+                t.daemon = True 
                 t.start()
-                thread_list.append(t)
-            
-                
-            for i in thread_list:
-                i.join()
-                
-                
-            
+                print('here we start the thread')
+                t.join()
+                print('here we join the thread')
+                time.sleep(1)
+
+                log_getter()
 #             trade1_sender = threading.Thread(target=trade_sender,args = (three_trades_dict[0],))
 #             trade2_sender = threading.Thread(target=trade_sender,args = (three_trades_dict[1],))
 #             trade3_sender = threading.Thread(target=trade_sender,args = (three_trades_dict[2],))
@@ -165,15 +183,19 @@ while True:
 #             trade1_sender.join()
 #             trade2_sender.join()
 #             trade3_sender.join()
+
             latest_message_id = result[1]
             
             time.sleep(30)
 
-        else:
+        
 
+        else:
+            
             time.sleep(30)
             continue
 
+        
     continue
 
 
