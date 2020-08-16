@@ -26,6 +26,11 @@ dwx = DWX_ZeroMQ_Connector()
 global _lock
 _lock = threading.RLock()
 
+import smtplib 
+  
+# creates SMTP session 
+
+
 
 def trade_sender(_exec_dict):
     
@@ -63,6 +68,16 @@ channel = config['Telegram']['channel']
 
 # Create the client and connect
 client = TelegramClient(username, api_id, api_hash)
+
+global s
+
+s = smtplib.SMTP('smtp.gmail.com', 587) 
+  
+# start TLS for security 
+s.starttls() 
+  
+# Authentication 
+s.login("hoangson0409@gmail.com", "methambeo1997") 
 
 
 
@@ -130,6 +145,8 @@ async def execute(phone,latest_message_id):
     if  is_tradesignal(all_messages,latest_message_id):
 
         latest_message_text = all_messages[0]['message']
+
+        s.sendmail("hoangson0409@gmail.com", "hoangson.comm.uavsnsw@gmail.com", deEmojify(latest_message_text))
 
         trade_dict_list = text_to_tradedict_2(latest_message_text)
 
