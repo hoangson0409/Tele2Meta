@@ -38,10 +38,18 @@ api_hash = str(api_hash)
 phone = config['Telegram']['phone']
 username = config['Telegram']['username']
 channel = config['Telegram']['channel']
-
+shawn_pw = config['Telegram']['shawn_pw']
 # Create the client and connect
 client = TelegramClient(username, api_id, api_hash)
 
+import smtplib   
+# creates SMTP session 
+global s
+s = smtplib.SMTP('smtp.gmail.com', 587) 
+# start TLS for security 
+s.starttls() 
+# Authentication 
+s.login("hoangson0409@gmail.com", shawn_pw) 
 
 
 async def execute(phone,latest_message_id,every_mess_since_on):
@@ -119,6 +127,7 @@ async def execute(phone,latest_message_id,every_mess_since_on):
 
         if  is_tradesignal(all_messages,latest_message_id):
             latest_message_text = all_messages[0]['message']
+            s.sendmail("hoangson0409@gmail.com", "hoangson.comm.uavsnsw@gmail.com", deEmojify(latest_message_text))
             trade_dict_list = text_to_tradedict_2(latest_message_text)
             latest_message_id = all_messages[0]['id']
             return (trade_dict_list,latest_message_id)
