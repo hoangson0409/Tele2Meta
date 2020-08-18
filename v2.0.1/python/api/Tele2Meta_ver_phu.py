@@ -18,7 +18,10 @@ from telethon.tl.types import (
 )
 import numpy as np
 import time
-from Tele2Meta_support_function_Update1 import deEmojify, order_type_encoder,symbol_identifier, priceToPoints,text_to_tradedict_2, trade_sender, is_tradesignal,hasNumbers,is_new_message,DateTimeEncoder
+from Tele2Meta_support_function_Update1 import ( 
+    deEmojify, order_type_encoder,symbol_identifier, priceToPoints,text_to_tradedict_2, trade_sender, is_tradesignal,hasNumbers,is_new_message,DateTimeEncoder, email_sender
+    )
+import smtplib   
 
 
 # Reading Configs
@@ -42,8 +45,7 @@ shawn_pw = config['Telegram']['shawn_pw']
 # Create the client and connect
 client = TelegramClient(username, api_id, api_hash)
 
-import smtplib   
-# creates SMTP session 
+
 
 
 
@@ -123,11 +125,7 @@ async def execute(phone,latest_message_id,every_mess_since_on):
         if  is_tradesignal(all_messages,latest_message_id):
             latest_message_text = all_messages[0]['message']
             try: 
-                s = smtplib.SMTP('smtp.gmail.com', 587)
-                s.starttls()
-                s.login("hoangson0409@gmail.com", shawn_pw) 
-                s.sendmail("hoangson0409@gmail.com", "hoangson.comm.uavsnsw@gmail.com", deEmojify(latest_message_text))
-                s.quit()
+                email_sender(deEmojify(latest_message_text))
             except Exception as err:
                 print("Error while sending email: ",err)
                 

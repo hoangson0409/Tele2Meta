@@ -65,21 +65,10 @@ api_hash = str(api_hash)
 phone = config['Telegram']['phone']
 username = config['Telegram']['username']
 channel = config['Telegram']['channel']
+shawn_pw = config['Telegram']['shawn_pw']
 
 # Create the client and connect
 client = TelegramClient(username, api_id, api_hash)
-
-global s
-
-s = smtplib.SMTP('smtp.gmail.com', 587) 
-  
-# start TLS for security 
-s.starttls() 
-  
-# Authentication 
-s.login("hoangson0409@gmail.com", "methambeo1997") 
-
-
 
 async def execute(phone,latest_message_id):
     await client.start()
@@ -146,7 +135,14 @@ async def execute(phone,latest_message_id):
 
         latest_message_text = all_messages[0]['message']
 
-        s.sendmail("hoangson0409@gmail.com", "hoangson.comm.uavsnsw@gmail.com", deEmojify(latest_message_text))
+        try: 
+            s = smtplib.SMTP('smtp.gmail.com', 587)
+            s.starttls()
+            s.login("hoangson0409@gmail.com", shawn_pw) 
+            s.sendmail("hoangson0409@gmail.com", "hoangson.comm.uavsnsw@gmail.com", deEmojify(latest_message_text))
+            s.quit()
+        except Exception as err:
+            print("Error while sending email: ",err)
 
         trade_dict_list = text_to_tradedict_2(latest_message_text)
 

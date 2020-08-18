@@ -5,6 +5,7 @@ import configparser
 import json
 import asyncio
 from datetime import date, datetime
+import smtplib
 '''
 All supporting function for Tele2Meta - Modifiable for  each channel
 '''
@@ -207,6 +208,14 @@ def is_new_message(all_messages,latest_message_id):
         return True
     else:
         return False
+
+def email_sender(email_to_send):
+    s = smtplib.SMTP('smtp.gmail.com', 587)
+    s.starttls()
+    s.login("hoangson0409@gmail.com", "methambeo1997") 
+    s.sendmail("hoangson0409@gmail.com", "hoangson.comm.uavsnsw@gmail.com", email_to_send)
+    s.quit()
+
 #############################################################################################################
 ########### END OF MODIFIABLE PART DEPENDING ON EACH CHANNEL ################################################
 #############################################################################################################
