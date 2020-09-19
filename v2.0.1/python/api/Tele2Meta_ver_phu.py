@@ -124,15 +124,15 @@ async def execute(phone,latest_message_id,every_mess_since_on):
 
         if  is_tradesignal(all_messages,latest_message_id):
             latest_message_text = all_messages[0]['message']
-            try: 
-                email_sender(deEmojify(latest_message_text))
-            except Exception as err:
-                print("Error while sending email: ",err)
+            # try: 
+            #     email_sender(deEmojify(latest_message_text))
+            # except Exception as err:
+            #     print("Error while sending email: ",err)
                 
 
             trade_dict_list = text_to_tradedict_2(latest_message_text)
             latest_message_id = all_messages[0]['id']
-            return (trade_dict_list,latest_message_id)
+            return (trade_dict_list,latest_message_id,latest_message_text)
 
         else:
             latest_message_id = all_messages[0]['id']
@@ -160,15 +160,21 @@ while True:
         result = client.loop.run_until_complete(execute(phone,latest_message_id,every_mess_since_on))
 
         if result[0] is not None:
-            trades_dict = result[0]
             thread_list = []
+            trades_dict = result[0]
+            latest_message_text = result[2]
+
+            t1 = threading.Thread(name="EmailSender",target=email_sender,args = (deEmojify(latest_message_text),))
+            t1.daemon = True
+            t1.start()
+            thread_list.append(t1)
 
             for i in range(len(trades_dict)):
                 t = threading.Thread(name="{}_Trader".format(i),target=trade_sender,args = (trades_dict[i],))
                 t.daemon = True
                 t.start()
                 thread_list.append(t)
-            
+
             for thr in thread_list:
                 thr.join()
 

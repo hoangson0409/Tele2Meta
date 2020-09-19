@@ -211,10 +211,14 @@ def is_new_message(all_messages,latest_message_id):
 
 def email_sender(email_to_send):
     s = smtplib.SMTP('smtp.gmail.com', 587)
-    s.starttls()
-    s.login("hoangson0409@gmail.com", "methambeo1997") 
-    s.sendmail("hoangson0409@gmail.com", "hoangson.comm.uavsnsw@gmail.com", email_to_send)
-    s.quit()
+    try:
+        s.starttls()
+        s.login("hoangson0409@gmail.com", "methambeo1997") 
+        s.sendmail("hoangson0409@gmail.com", "hoangson.comm.uavsnsw@gmail.com", email_to_send)
+    except Exception as err:
+        print("Error while sending email: ",err)
+    finally:
+        s.quit()
 
 #############################################################################################################
 ########### END OF MODIFIABLE PART DEPENDING ON EACH CHANNEL ################################################
