@@ -19,7 +19,7 @@ from telethon.tl.types import (
 import numpy as np
 import time
 from Tele2Meta_support_function_Update1 import ( 
-    deEmojify, order_type_encoder,symbol_identifier, priceToPoints,text_to_tradedict_2, trade_sender, is_tradesignal,hasNumbers,is_new_message,DateTimeEncoder, email_sender,find_tradeID,db_insert
+    deEmojify, order_type_encoder,symbol_identifier, priceToPoints,text_to_tradedict_2, trade_sender, is_tradesignal,hasNumbers,is_new_message,DateTimeEncoder, email_sender,find_tradeID,db_insert,trade_sender_and_findID
     )
 import smtplib   
 import concurrent.futures
@@ -49,7 +49,6 @@ shawn_pw = config['Telegram']['shawn_pw']
 
 # Create the client and connect
 client = TelegramClient(username, api_id, api_hash)
-
 
 
 
@@ -129,12 +128,6 @@ async def execute(phone,latest_message_id,every_mess_since_on):
 
         if  is_tradesignal(all_messages,latest_message_id):
             latest_message_text = all_messages[0]['message']
-            # try: 
-            #     email_sender(deEmojify(latest_message_text))
-            # except Exception as err:
-            #     print("Error while sending email: ",err)
-                
-
             trade_dict_list = text_to_tradedict_2(latest_message_text)
             latest_message_id = all_messages[0]['id']
             return (trade_dict_list,latest_message_id,latest_message_text)
@@ -177,23 +170,14 @@ while True:
             thread_list.append(t1)
 
             for i in range(len(trades_dict)):
-                t = threading.Thread(name="{}_Trader".format(i),target=trade_sender,args = (trades_dict[i],))
-                t.daemon = True
-                t.start()
-                thread_list.append(t)
-
-                time.sleep(2)
-
                 with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                    future = executor.submit(find_tradeID)
+                    future = executor.submit(trade_sender_and_findID,trades_dict[i])
                     return_value = future.result()
                     trade_id_dict.append(return_value)
-                # tid = find_tradeID()
-                # trade_id_dict.append(tid)
 
 
-            print("HERE IS THE TRADE_ID_DICT")
-            print(trade_id_dict)
+            print("Here is the trade_id_dict: ", trade_id_dict)
+            
 
             t2 = threading.Thread(name="dbInsert",target=db_insert,args = (latest_message_id,trade_id_dict,))
             t2.daemon = True

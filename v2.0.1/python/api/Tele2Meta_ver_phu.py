@@ -22,6 +22,10 @@ from Tele2Meta_support_function_Update1 import (
     deEmojify, order_type_encoder,symbol_identifier, priceToPoints,text_to_tradedict_2, trade_sender, is_tradesignal,hasNumbers,is_new_message,DateTimeEncoder, email_sender
     )
 import smtplib   
+import concurrent.futures
+import mysql.connector
+from mysql.connector import Error
+from mysql.connector import errorcode
 
 
 # Reading Configs
@@ -161,6 +165,7 @@ while True:
 
         if result[0] is not None:
             thread_list = []
+            trade_id_dict = []
             trades_dict = result[0]
             latest_message_text = result[2]
 
@@ -174,6 +179,20 @@ while True:
                 t.daemon = True
                 t.start()
                 thread_list.append(t)
+
+                time.sleep(1)
+
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    future = executor.submit(find_tradeID)
+                    return_value = future.result()
+                    trade_id_dict.append(return_value)
+
+
+
+            # t2 = threading.Thread(name="dbInsert",target=db_insert,args = (result[1],trade_id_dict,))
+            # t2.daemon = True
+            # t2.start()
+            # thread_list.append(t2)
 
             for thr in thread_list:
                 thr.join()

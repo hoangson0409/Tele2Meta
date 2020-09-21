@@ -1,14 +1,30 @@
-import numpy as np
 from DWX_ZeroMQ_Connector_v2_0_1_RC8 import DWX_ZeroMQ_Connector
 import threading
 import configparser
 import json
 import asyncio
 from datetime import date, datetime
-import smtplib
+from telethon import TelegramClient
+from telethon.errors import SessionPasswordNeededError
+from telethon.tl.functions.messages import (GetHistoryRequest)
+from telethon.tl.types import (
+    PeerChannel
+)
+import numpy as np
+import time
+import smtplib   
+import concurrent.futures
+import mysql.connector
+from mysql.connector import Error
+from mysql.connector import errorcode
+
 '''
 All supporting function for Tele2Meta - Modifiable for  each channel
 '''
+global dwx
+dwx = DWX_ZeroMQ_Connector()
+
+
 
 #FUNCTION TO REMOVE EMOJI FROM TEXT
 class DateTimeEncoder(json.JSONEncoder):
@@ -168,8 +184,6 @@ def trade_sender(_exec_dict):
     
     _lock = threading.Lock()
 
-    dwx = DWX_ZeroMQ_Connector()
-
     _lock.acquire()
 
     response = dwx._DWX_MTX_NEW_TRADE_(_order=_exec_dict)
@@ -219,6 +233,67 @@ def email_sender(email_to_send):
         print("Error while sending email: ",err)
     finally:
         s.quit()
+
+def find_tradeID():
+    
+    # _lock = threading.Lock()
+    # _lock.acquire()
+    resp = dwx._get_response_()
+    # _lock.release()
+    # XU LY response o day, return trade id
+    if resp is not None:
+        if '_ticket' in resp:
+            return resp['_ticket']
+    
+
+
+def db_insert(latest_mess_id,trade_id_dict):
+    try:
+        connection = mysql.connector.connect(host='localhost',
+                                             database='tele2meta',
+                                             user='root',
+                                             password='password')
+        
+
+        cursor = connection.cursor()
+        for i in trade_id_dict:
+            mySql_insert_query = """INSERT INTO mess2trade (trade_id,message_id) VALUES ({tid},{mid}) """.format(tid=i,mid=latest_mess_id)
+            cursor.execute(mySql_insert_query)
+            connection.commit()
+
+        print("Records inserted successfully into table")
+        cursor.close()
+
+    except Error as error:
+        print("Failed to insert record into table. Error {}".format(error))
+
+    finally:
+        if (connection.is_connected()):
+            connection.close()
+            print("MySQL connection is closed")
+
+def trade_sender_and_findID(_exec_dict):
+    _lock = threading.Lock()
+    _lock.acquire()
+
+    t = threading.Thread(name="Trader",target=trade_sender,args = (_exec_dict,))
+    t.daemon = True
+    t.start()
+    t.join()
+
+    time.sleep(2)
+    resp = dwx._get_response_()
+    _lock.release()
+
+    if resp is not None:
+        if '_ticket' in resp:
+            return resp['_ticket']
+
+
+
+
+
+
 
 #############################################################################################################
 ########### END OF MODIFIABLE PART DEPENDING ON EACH CHANNEL ################################################
