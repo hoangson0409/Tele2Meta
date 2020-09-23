@@ -19,7 +19,7 @@ from telethon.tl.types import (
 import numpy as np
 import time
 from Tele2Meta_support_function_Update1 import ( 
-    deEmojify, order_type_encoder,symbol_identifier, priceToPoints,text_to_tradedict_2, trade_sender, is_tradesignal,hasNumbers,is_new_message,DateTimeEncoder, email_sender,find_tradeID,db_insert,trade_sender_and_findID
+    deEmojify, order_type_encoder,symbol_identifier, priceToPoints,text_to_tradedict_2, trade_sender, is_tradesignal,hasNumbers,is_new_message,DateTimeEncoder, email_sender,find_tradeID,db_insert,trade_sender_and_findID,read_and_write_disk
     )
 import smtplib   
 import concurrent.futures
@@ -53,7 +53,7 @@ client = TelegramClient(username, api_id, api_hash)
 
 
 
-async def execute(phone,latest_message_id,every_mess_since_on):
+async def execute(phone,latest_message_id):
     await client.start()
     print("Client Created")
     # Ensure you're authorized
@@ -118,10 +118,8 @@ async def execute(phone,latest_message_id,every_mess_since_on):
     #NEU LA TIN NHAN MOI, LA TRADE SIGNAL: IN THEM VAO CHANNEL MESSAGE, LAY ID
     #NEU LA TIN NHAN MOI, KHONG PHAI TRADE SIGNAL: LAY ID
     #NEU KHONG PHAI TIN NHAN MOI: LAY ID
-    if is_new_message(all_messages,latest_message_id):    
-        every_mess_since_on.append(all_messages[0]['message'])
-        with open('channel_messages_phu.json', 'w') as outfile:
-            json.dump(every_mess_since_on, outfile, cls=DateTimeEncoder)
+    if is_new_message(all_messages,latest_message_id): 
+        read_and_write_disk(all_messages[0]['message'])
 
         if  is_tradesignal(all_messages,latest_message_id):
             latest_message_text = all_messages[0]['message']
@@ -146,13 +144,12 @@ async def execute(phone,latest_message_id,every_mess_since_on):
 ####################################################################################
 global latest_message_id 
 latest_message_id = 0
-global every_mess_since_on
-every_mess_since_on = [] 
+
 
 while True:
     with client:
         
-        result = client.loop.run_until_complete(execute(phone,latest_message_id,every_mess_since_on))
+        result = client.loop.run_until_complete(execute(phone,latest_message_id))
 
         if result[0] is not None:
             thread_list = []

@@ -289,7 +289,12 @@ def trade_sender_and_findID(_exec_dict):
         if '_ticket' in resp:
             return resp['_ticket']
 
-
+def read_and_write_disk(message):
+    with open('channel_messages_phu.json','r') as json_file: 
+        data = json.load(json_file)
+        data.append(message)
+    with open('channel_messages_phu.json', 'w') as outfile:
+        json.dump(data, outfile, cls=DateTimeEncoder)
 
 
 
