@@ -17,7 +17,7 @@ import concurrent.futures
 import mysql.connector
 from mysql.connector import Error
 from mysql.connector import errorcode
-
+from django.core.serializers.json import DjangoJSONEncoder
 '''
 All supporting function for Tele2Meta - Modifiable for  each channel
 '''
@@ -261,16 +261,48 @@ def db_insert(latest_mess_id,trade_id_dict):
             cursor.execute(mySql_insert_query)
             connection.commit()
 
-        print("Records inserted successfully into table")
+        print("Records inserted successfully into table mess2trade")
         cursor.close()
 
     except Error as error:
-        print("Failed to insert record into table. Error {}".format(error))
+        print("Failed to insert record into table mess2trade. Error {}".format(error))
 
     finally:
         if (connection.is_connected()):
             connection.close()
-            print("MySQL connection is closed")
+            print("MySQL connection for mess2trade db_insert is closed")
+
+def db_insert2(latest_mess_id,all_message):
+    
+    date_received = int(all_message['date'].timestamp())
+    content = deEmojify(all_message['message'])
+    raw_message = json.dumps(all_message,sort_keys=True,indent=1,cls=DjangoJSONEncoder)
+    
+    try:
+        connection = mysql.connector.connect(host='localhost',
+                                             database='tele2meta',
+                                             user='root',
+                                             password='password')
+        
+
+        cursor = connection.cursor()
+        
+        mySql_insert_query2 = """INSERT INTO messages (message_id,date_received,content,raw_message) VALUES ({a},{b},'{c}','{d}') """.format(a=latest_mess_id,b=date_received,c=content,d=raw_message)
+        cursor.execute(mySql_insert_query2)
+        connection.commit()
+        print("Records inserted succcessfully into table messages")
+        
+        cursor.close()
+
+    except Error as error:
+        print("Failed to insert record into table messages. Error {}".format(error))
+
+    finally:
+        if (connection.is_connected()):
+            connection.close()
+            print("MySQL connection for table messages is closed")
+
+
 
 def trade_sender_and_findID(_exec_dict):
     _lock = threading.Lock()

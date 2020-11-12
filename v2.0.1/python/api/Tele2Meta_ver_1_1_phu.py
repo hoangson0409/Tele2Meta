@@ -19,7 +19,7 @@ from telethon.tl.types import (
 import numpy as np
 import time
 from Tele2Meta_support_function_Update1 import ( 
-    deEmojify, order_type_encoder,symbol_identifier, priceToPoints,text_to_tradedict_2, trade_sender, is_tradesignal,hasNumbers,is_new_message,DateTimeEncoder, email_sender,find_tradeID,db_insert,trade_sender_and_findID,read_and_write_disk
+    deEmojify, order_type_encoder,symbol_identifier, priceToPoints,text_to_tradedict_2, trade_sender, is_tradesignal,hasNumbers,is_new_message,DateTimeEncoder, email_sender,find_tradeID,db_insert,trade_sender_and_findID,read_and_write_disk,db_insert2
     )
 import smtplib   
 import concurrent.futures
@@ -125,15 +125,16 @@ async def execute(phone,latest_message_id):
             latest_message_text = all_messages[0]['message']
             trade_dict_list = text_to_tradedict_2(latest_message_text)
             latest_message_id = all_messages[0]['id']
-            return (trade_dict_list,latest_message_id,latest_message_text)
+            return (trade_dict_list,latest_message_id,latest_message_text,all_messages[0])
 
         else:
+            latest_message_text = all_messages[0]['message']
             latest_message_id = all_messages[0]['id']
-            return (None,latest_message_id)
+            return (None,latest_message_id,latest_message_text,all_messages[0])
 
     else:
         latest_message_id = all_messages[0]['id']
-        return (None,latest_message_id)
+        return (None,latest_message_id,None,all_messages[0])
 
     
    
@@ -150,12 +151,19 @@ while True:
     with client:
         
         result = client.loop.run_until_complete(execute(phone,latest_message_id))
+        latest_message_id = result[1]
+        thread_list = []
 
-        if result[0] is not None:
-            thread_list = []
+        if result[2] is not None: #if new message is found
+            t3 = threading.Thread(name="dbInsert2",target=db_insert2,args = (latest_message_id,result[3],))
+            t3.daemon = True
+            t3.start()
+            thread_list.append(t3)
+
+        if result[0] is not None: #if trade signal found in new message
+            
             trade_id_dict = []
             trades_dict = result[0]
-            latest_message_id = result[1]
             latest_message_text = result[2]
 
             t1 = threading.Thread(name="EmailSender",target=email_sender,args = (deEmojify(latest_message_text),))
