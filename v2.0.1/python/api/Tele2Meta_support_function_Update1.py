@@ -250,8 +250,8 @@ def find_tradeID():
 def db_insert(latest_mess_id,trade_id_dict):
     try:
         connection = mysql.connector.connect(host='localhost',
-                                             database='tele2meta',
-                                             user='root',
+                                             database='tele3meta',
+                                             user='shawn',
                                              password='password')
         
 
@@ -272,7 +272,7 @@ def db_insert(latest_mess_id,trade_id_dict):
             connection.close()
             print("MySQL connection for mess2trade db_insert is closed")
 
-def db_insert2(latest_mess_id,all_message):
+def db_insert2(latest_mess_id,all_message): #for table message
     
     date_received = int(all_message['date'].timestamp())
     content = deEmojify(all_message['message'])
@@ -280,8 +280,8 @@ def db_insert2(latest_mess_id,all_message):
     
     try:
         connection = mysql.connector.connect(host='localhost',
-                                             database='tele2meta',
-                                             user='root',
+                                             database='tele3meta',
+                                             user='shawn',
                                              password='password')
         
 
