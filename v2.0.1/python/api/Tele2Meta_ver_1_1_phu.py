@@ -19,8 +19,9 @@ from telethon.tl.types import (
 import numpy as np
 import time
 from Tele2Meta_support_function_Update1 import ( 
-    deEmojify, order_type_encoder,symbol_identifier, priceToPoints,text_to_tradedict_2, trade_sender, is_tradesignal,hasNumbers,is_new_message,DateTimeEncoder, email_sender,find_tradeID,db_insert,trade_sender_and_findID,read_and_write_disk,db_insert2
-    )
+    deEmojify, order_type_encoder,symbol_identifier, priceToPoints,text_to_tradedict_2, trade_sender, is_tradesignal,
+    hasNumbers,is_new_message,DateTimeEncoder, email_sender,find_tradeID,db_insert,trade_sender_and_findID,
+    read_and_write_disk,db_insert2,get_open_trade_result_and_insertdb,new_db_insert,is_new_hour)
 import smtplib   
 import concurrent.futures
 import mysql.connector
@@ -146,6 +147,9 @@ async def execute(phone,latest_message_id):
 global latest_message_id 
 latest_message_id = 0
 
+global latest_hour
+latest_hour = 0
+
 
 while True:
     with client:
@@ -154,6 +158,15 @@ while True:
         latest_message_id = result[1]
         thread_list = []
 
+        #at the beginning of new hour
+        #get_open_trade_result_and_insertdb inserts into trade_pnl_info table
+        if is_new_hour(latest_hour):
+            t4 = threading.Thread(name="get_open_trade",target=get_open_trade_result_and_insertdb)
+            t4.daemon = True
+            t4.start()
+            thread_list.append(t4)
+
+        #db_insert2 inserts into messages table
         if result[2] is not None: #if new message is found
             t3 = threading.Thread(name="dbInsert2",target=db_insert2,args = (latest_message_id,result[3],))
             t3.daemon = True
@@ -163,6 +176,7 @@ while True:
         if result[0] is not None: #if trade signal found in new message
             
             trade_id_dict = []
+            trade_sender_response = []
             trades_dict = result[0]
             latest_message_text = result[2]
 
@@ -174,26 +188,35 @@ while True:
             for i in range(len(trades_dict)):
                 with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
                     future = executor.submit(trade_sender_and_findID,trades_dict[i])
-                    return_value = future.result()
-                    trade_id_dict.append(return_value)
+                    trade_sender_result = future.result()
+                    trade_id = trade_sender_result[0]
+                    response = trade_sender_result[1]
+                    trade_id_dict.append(trade_id)
+                    trade_sender_response.apend(response)
 
             print("Here is the trade_id_dict: ", trade_id_dict)
             
-            t2 = threading.Thread(name="dbInsert",target=db_insert,args = (latest_message_id,trade_id_dict,))
-            t2.daemon = True
+            #db_insert inserts into trade_static_info table and mess2trade table
+            t2 = threading.Thread(name="dbInsert",target=new_db_insert,args = (latest_message_id,trade_id_dict,trade_sender_response,))
+            t2.daemon = True,
             t2.start()
             thread_list.append(t2)
 
             for thr in thread_list:
                 thr.join()
 
-            
+            latest_hour = datetime.now().hour
             time.sleep(30)
 
         else:
             latest_message_id = result[1]
+            for thr in thread_list:
+                thr.join()
+            latest_hour = datetime.now().hour
+            
             time.sleep(30)
             continue
+
 
     continue
 

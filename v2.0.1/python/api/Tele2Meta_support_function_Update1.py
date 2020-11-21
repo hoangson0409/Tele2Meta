@@ -18,6 +18,8 @@ import mysql.connector
 from mysql.connector import Error
 from mysql.connector import errorcode
 from django.core.serializers.json import DjangoJSONEncoder
+import datetime
+import concurrent.futures
 '''
 All supporting function for Tele2Meta - Modifiable for  each channel
 '''
@@ -318,8 +320,11 @@ def trade_sender_and_findID(_exec_dict):
     _lock.release()
 
     if resp is not None:
-        if '_ticket' in resp:
-            return resp['_ticket']
+        if '_ticket' in resp and '_response' not in resp:
+            resp['symbol'] = _exec_dict["_symbol"]
+            resp["sl_in_points"] =  _exec_dict["_SL"]
+            resp["tp_in_points"] =  _exec_dict["_TP"]
+            return (resp['_ticket'],resp)
 
 def read_and_write_disk(message):
     with open('channel_messages_phu.json','r') as json_file: 
@@ -329,8 +334,109 @@ def read_and_write_disk(message):
         json.dump(data, outfile, cls=DateTimeEncoder)
 
 
+def is_new_hour(latest_hour):
+    now = datetime.datetime.now()
+    if  (
+        now.hour != latest_hour
+        ):
+        return True
+    else:
+        return False
+
+def get_open_trade_result():
+    _lock = threading.Lock()
+    _lock.acquire()
+    dwx._DWX_MTX_GET_ALL_OPEN_TRADES_()
+    _lock.release()
+    
+
+def get_open_trade_result_and_insertdb():
+    _lock = threading.Lock()
+    _lock.acquire()
+
+    t = threading.Thread(name="get_open_trade_result",target=get_open_trade_result)
+    t.daemon = True
+    t.start()
+    t.join()
+
+    time.sleep(2)
+    return_value = dwx._get_response_()
+    _lock.release()
+
+    print("this is return_value value from get_open_trade: ", return_value)
+
+    if return_value is not None:
+        print('reaching if else')
+        try:
+            connection = mysql.connector.connect(host='localhost',
+                                             database='tele3meta',
+                                             user='shawn',
+                                             password='password')
+            cursor = connection.cursor()
+            
+            for i in return_value["_trades"]:
+                trade_id = i
+                t_time = int(datetime.datetime.now().timestamp())
+                pnl = return_value["_trades"][i]["_pnl"]
+                mySql_insert_query = """INSERT INTO trade_info_pnl (trade_id,t_time,pnl) VALUES ({a},{b},{c}) """.format(a=trade_id,b=t_time,c=pnl)
+                cursor.execute(mySql_insert_query)
+                connection.commit()
+            print("Records inserted successfully into table trade_info_pnl")
+            cursor.close()
+            
+        except Error as error:
+            print("Failed to insert record into table trade_info_pnl. Error {}".format(error))
+
+        finally:
+            if (connection.is_connected()):
+                connection.close()
+                print("MySQL connection for get_open_trade_result_and_insertdb is closed")
 
 
+
+
+def new_db_insert(latest_mess_id,trade_id_dict,response_dict_list):
+    try:
+        connection = mysql.connector.connect(host='localhost',
+                                             database='tele3meta',
+                                             user='shawn',
+                                             password='password')
+        
+
+        cursor = connection.cursor()
+        for i in trade_id_dict:
+            mySql_insert_query = """INSERT INTO mess2trade (trade_id,message_id) VALUES ({tid},{mid}) """.format(tid=i,mid=latest_mess_id)
+            cursor.execute(mySql_insert_query)
+            connection.commit()
+        
+        
+        
+        print("Records inserted successfully into table mess2trade")
+        for i in response_dict_list:
+            trade_id = i["_ticket"]
+            symbol = i["symbol"]
+            open_time_str = i['_open_time']
+            open_time = datetime.datetime.strptime(open_time_str, '%Y.%m.%d %H:%M:%S')
+            open_time_unix = int(open_time.timestamp())
+            open_price = i['_open_price']
+            SL = i["_sl"]
+            TP = i["_tp"]
+            SL_in_points = i["sl_in_points"]
+            TP_in_points = i['tp_in_points']
+            mySql_insert_query = """INSERT INTO trade_info_static (trade_id,symbol,open_time,open_price,sl,tp,sl_in_points,tp_in_points) VALUES ({a},{b},{c},{e},{f},{g},{h}) """.format(a=trade_id,b=symbol,c=open_time_unix,d=open_price,e=SL,f=TP,g=SL_in_points,h=TP_in_points)
+            cursor.execute(mySql_insert_query)
+            connection.commit()
+        
+        print("Records inserted successfully into table trade_info_static")
+        cursor.close()
+
+    except Error as error:
+        print("Failed to insert record into table mess2trade and trade_info_static. Error {}".format(error))
+
+    finally:
+        if (connection.is_connected()):
+            connection.close()
+            print("MySQL connection for db_insert is closed")
 
 #############################################################################################################
 ########### END OF MODIFIABLE PART DEPENDING ON EACH CHANNEL ################################################
