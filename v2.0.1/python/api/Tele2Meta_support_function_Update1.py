@@ -438,6 +438,27 @@ def new_db_insert(latest_mess_id,trade_id_dict,response_dict_list):
             connection.close()
             print("MySQL connection for db_insert is closed")
 
+def send_trades_and_insertDB(trades_dict,latest_message_id):
+
+    trade_id_dict = []
+    trade_sender_response = []
+
+    for i in range(len(trades_dict)):
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                    future = executor.submit(trade_sender_and_findID,trades_dict[i])
+                    trade_sender_result = future.result()
+                    trade_id = trade_sender_result[0]
+                    response = trade_sender_result[1]
+                    trade_id_dict.append(trade_id)
+                    trade_sender_response.apend(response)
+
+            print("Here is the trade_id_dict: ", trade_id_dict)
+    
+    t = threading.Thread(name="dbInsert",target=new_db_insert,args = (latest_message_id,trade_id_dict,trade_sender_response,))
+    t.daemon = True,
+    t.start()
+    t.join()
+
 #############################################################################################################
 ########### END OF MODIFIABLE PART DEPENDING ON EACH CHANNEL ################################################
 #############################################################################################################
