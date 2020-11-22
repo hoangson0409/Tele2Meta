@@ -19,8 +19,9 @@ from telethon.tl.types import (
 import numpy as np
 import time
 from Tele2Meta_support_function_Update1 import ( 
-    deEmojify, order_type_encoder,symbol_identifier, priceToPoints,text_to_tradedict_2, trade_sender, is_tradesignal,hasNumbers,is_new_message,DateTimeEncoder, email_sender,find_tradeID,db_insert
-    )
+    deEmojify, order_type_encoder,symbol_identifier, priceToPoints,text_to_tradedict_2, trade_sender, is_tradesignal,
+    hasNumbers,is_new_message,DateTimeEncoder, email_sender,find_tradeID,db_insert,trade_sender_and_findID,
+    read_and_write_disk,db_insert2,get_open_trade_result_and_insertdb,new_db_insert,is_new_hour,send_trades_and_insertDB)
 import smtplib   
 import concurrent.futures
 import mysql.connector
@@ -53,8 +54,7 @@ client = TelegramClient(username, api_id, api_hash)
 
 
 
-
-async def execute(phone,latest_message_id,every_mess_since_on):
+async def execute(phone,latest_message_id):
     await client.start()
     print("Client Created")
     # Ensure you're authorized
@@ -69,10 +69,7 @@ async def execute(phone,latest_message_id,every_mess_since_on):
 
     user_input_channel = channel
     entity = user_input_channel
-    # if user_input_channel.isdigit():
-    #     entity = PeerChannel(int(user_input_channel))
-    # else:
-    #     entity = user_input_channel
+
 
     my_channel = await client.get_input_entity(entity)
 
@@ -122,30 +119,23 @@ async def execute(phone,latest_message_id,every_mess_since_on):
     #NEU LA TIN NHAN MOI, LA TRADE SIGNAL: IN THEM VAO CHANNEL MESSAGE, LAY ID
     #NEU LA TIN NHAN MOI, KHONG PHAI TRADE SIGNAL: LAY ID
     #NEU KHONG PHAI TIN NHAN MOI: LAY ID
-    if is_new_message(all_messages,latest_message_id):    
-        every_mess_since_on.append(all_messages[0]['message'])
-        with open('channel_messages_phu.json', 'w') as outfile:
-            json.dump(every_mess_since_on, outfile, cls=DateTimeEncoder)
+    if is_new_message(all_messages,latest_message_id): 
+        read_and_write_disk(all_messages[0]['message'])
 
         if  is_tradesignal(all_messages,latest_message_id):
             latest_message_text = all_messages[0]['message']
-            # try: 
-            #     email_sender(deEmojify(latest_message_text))
-            # except Exception as err:
-            #     print("Error while sending email: ",err)
-                
-
             trade_dict_list = text_to_tradedict_2(latest_message_text)
             latest_message_id = all_messages[0]['id']
-            return (trade_dict_list,latest_message_id,latest_message_text)
+            return (trade_dict_list,latest_message_id,latest_message_text,all_messages[0])
 
         else:
+            latest_message_text = all_messages[0]['message']
             latest_message_id = all_messages[0]['id']
-            return (None,latest_message_id)
+            return (None,latest_message_id,latest_message_text,all_messages[0])
 
     else:
         latest_message_id = all_messages[0]['id']
-        return (None,latest_message_id)
+        return (None,latest_message_id,None,all_messages[0])
 
     
    
@@ -156,19 +146,38 @@ async def execute(phone,latest_message_id,every_mess_since_on):
 ####################################################################################
 global latest_message_id 
 latest_message_id = 0
-global every_mess_since_on
-every_mess_since_on = [] 
+
+global latest_hour
+latest_hour = 0
+
 
 while True:
     with client:
         
-        result = client.loop.run_until_complete(execute(phone,latest_message_id,every_mess_since_on))
+        result = client.loop.run_until_complete(execute(phone,latest_message_id))
+        latest_message_id = result[1]
+        thread_list = []
 
-        if result[0] is not None:
-            thread_list = []
-            trade_id_dict = []
+        #at the beginning of new hour
+        #get_open_trade_result_and_insertdb inserts into trade_pnl_info table
+        if is_new_hour(latest_hour):
+            t4 = threading.Thread(name="get_open_trade",target=get_open_trade_result_and_insertdb)
+            t4.daemon = True
+            t4.start()
+            thread_list.append(t4)
+
+        #db_insert2 inserts into messages table
+        if result[2] is not None: #if new message is found
+            t3 = threading.Thread(name="dbInsert2",target=db_insert2,args = (latest_message_id,result[3],))
+            t3.daemon = True
+            t3.start()
+            thread_list.append(t3)
+
+        if result[0] is not None: #if trade signal found in new message
+            #EXPERIMENT
+            # trade_id_dict = []
+            # trade_sender_response = []
             trades_dict = result[0]
-            latest_message_id = result[1]
             latest_message_text = result[2]
 
             t1 = threading.Thread(name="EmailSender",target=email_sender,args = (deEmojify(latest_message_text),))
@@ -176,40 +185,38 @@ while True:
             t1.start()
             thread_list.append(t1)
 
-            for i in range(len(trades_dict)):
-                t = threading.Thread(name="{}_Trader".format(i),target=trade_sender,args = (trades_dict[i],))
-                t.daemon = True
-                t.start()
-                thread_list.append(t)
-
-                time.sleep(2)
-
-                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                    future = executor.submit(find_tradeID)
-                    return_value = future.result()
-                    trade_id_dict.append(return_value)
-                # tid = find_tradeID()
-                # trade_id_dict.append(tid)
-
-
-            print("HERE IS THE TRADE_ID_DICT")
-            print(trade_id_dict)
-
-            t2 = threading.Thread(name="dbInsert",target=db_insert,args = (latest_message_id,trade_id_dict,))
+            t2 = threading.Thread(name="send_trades_and_insertDB",target=send_trades_and_insertDB,args = (trades_dict,latest_message_id,))
             t2.daemon = True
             t2.start()
             thread_list.append(t2)
 
-            for thr in thread_list:
-                thr.join()
+            #EXPERIMENT
+            # for i in range(len(trades_dict)):
+            #     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            #         future = executor.submit(trade_sender_and_findID,trades_dict[i])
+            #         trade_sender_result = future.result()
+            #         trade_id = trade_sender_result[0]
+            #         response = trade_sender_result[1]
+            #         trade_id_dict.append(trade_id)
+            #         trade_sender_response.apend(response)
+
+            # print("Here is the trade_id_dict: ", trade_id_dict)
+            
+            # #db_insert inserts into trade_static_info table and mess2trade table
+            # t2 = threading.Thread(name="dbInsert",target=new_db_insert,args = (latest_message_id,trade_id_dict,trade_sender_response,))
+            # t2.daemon = True,
+            # t2.start()
+            # thread_list.append(t2)
 
             
-            time.sleep(30)
 
-        else:
-            latest_message_id = result[1]
-            time.sleep(30)
-            continue
+            
+
+            
+        latest_hour = datetime.now().hour
+        for thr in thread_list:
+                thr.join()
+        time.sleep(30)
 
     continue
 

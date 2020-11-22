@@ -366,7 +366,7 @@ def get_open_trade_result_and_insertdb():
     print("this is return_value value from get_open_trade: ", return_value)
 
     if return_value is not None:
-        print('reaching if else')
+        
         try:
             connection = mysql.connector.connect(host='localhost',
                                              database='tele3meta',
@@ -444,18 +444,18 @@ def send_trades_and_insertDB(trades_dict,latest_message_id):
     trade_sender_response = []
 
     for i in range(len(trades_dict)):
-                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                    future = executor.submit(trade_sender_and_findID,trades_dict[i])
-                    trade_sender_result = future.result()
-                    trade_id = trade_sender_result[0]
-                    response = trade_sender_result[1]
-                    trade_id_dict.append(trade_id)
-                    trade_sender_response.apend(response)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(trade_sender_and_findID,trades_dict[i])
+            trade_sender_result = future.result()
+            trade_id = trade_sender_result[0]
+            response = trade_sender_result[1]
+            trade_id_dict.append(trade_id)
+            trade_sender_response.apend(response)
 
-            print("Here is the trade_id_dict: ", trade_id_dict)
+    print("Here is the trade_id_dict: ", trade_id_dict)
     
     t = threading.Thread(name="dbInsert",target=new_db_insert,args = (latest_message_id,trade_id_dict,trade_sender_response,))
-    t.daemon = True,
+    t.daemon = True
     t.start()
     t.join()
 
