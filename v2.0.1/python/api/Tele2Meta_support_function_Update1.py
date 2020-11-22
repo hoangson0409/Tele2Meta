@@ -320,10 +320,12 @@ def trade_sender_and_findID(_exec_dict):
     _lock.release()
 
     if resp is not None:
+        #Chi khi gui trade thanh cong - moi gui ve 
         if '_ticket' in resp and '_response' not in resp:
             resp['symbol'] = _exec_dict["_symbol"]
             resp["sl_in_points"] =  _exec_dict["_SL"]
             resp["tp_in_points"] =  _exec_dict["_TP"]
+
             return (resp['_ticket'],resp)
 
 def read_and_write_disk(message):
@@ -359,11 +361,11 @@ def get_open_trade_result_and_insertdb():
     t.start()
     t.join()
 
-    time.sleep(2)
+    time.sleep(0.5)
     return_value = dwx._get_response_()
     _lock.release()
 
-    print("this is return_value value from get_open_trade: ", return_value)
+    print("this is return_value value from get_open_trade: ", return_value,"no more")
 
     if return_value is not None:
         
@@ -447,17 +449,20 @@ def send_trades_and_insertDB(trades_dict,latest_message_id):
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
             future = executor.submit(trade_sender_and_findID,trades_dict[i])
             trade_sender_result = future.result()
-            trade_id = trade_sender_result[0]
-            response = trade_sender_result[1]
-            trade_id_dict.append(trade_id)
-            trade_sender_response.apend(response)
+
+            if trade_sender_result is not None:
+                trade_id = trade_sender_result[0]
+                response = trade_sender_result[1]
+                trade_id_dict.append(trade_id)
+                trade_sender_response.append(response)
 
     print("Here is the trade_id_dict: ", trade_id_dict)
     
-    t = threading.Thread(name="dbInsert",target=new_db_insert,args = (latest_message_id,trade_id_dict,trade_sender_response,))
-    t.daemon = True
-    t.start()
-    t.join()
+    if len(trade_id_dict) > 0:
+        t = threading.Thread(name="dbInsert",target=new_db_insert,args = (latest_message_id,trade_id_dict,trade_sender_response,))
+        t.daemon = True
+        t.start()
+        t.join()
 
 #############################################################################################################
 ########### END OF MODIFIABLE PART DEPENDING ON EACH CHANNEL ################################################
