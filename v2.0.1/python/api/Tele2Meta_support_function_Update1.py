@@ -236,43 +236,7 @@ def email_sender(email_to_send):
     finally:
         s.quit()
 
-def find_tradeID():
-    
-    # _lock = threading.Lock()
-    # _lock.acquire()
-    resp = dwx._get_response_()
-    # _lock.release()
-    # XU LY response o day, return trade id
-    if resp is not None:
-        if '_ticket' in resp:
-            return resp['_ticket']
-    
 
-
-def db_insert(latest_mess_id,trade_id_dict):
-    try:
-        connection = mysql.connector.connect(host='localhost',
-                                             database='tele3meta',
-                                             user='shawn',
-                                             password='password')
-        
-
-        cursor = connection.cursor()
-        for i in trade_id_dict:
-            mySql_insert_query = """INSERT INTO mess2trade (trade_id,message_id) VALUES ({tid},{mid}) """.format(tid=i,mid=latest_mess_id)
-            cursor.execute(mySql_insert_query)
-            connection.commit()
-
-        print("Records inserted successfully into table mess2trade")
-        cursor.close()
-
-    except Error as error:
-        print("Failed to insert record into table mess2trade. Error {}".format(error))
-
-    finally:
-        if (connection.is_connected()):
-            connection.close()
-            print("MySQL connection for mess2trade db_insert is closed")
 
 def db_insert2(latest_mess_id,all_message): #for table message
     
@@ -305,30 +269,6 @@ def db_insert2(latest_mess_id,all_message): #for table message
             print("MySQL connection for table messages is closed")
 
 
-
-def trade_sender_and_findID(_exec_dict):
-    _lock = threading.Lock()
-    _lock.acquire()
-
-    t = threading.Thread(name="Trader",target=trade_sender,args = (_exec_dict,))
-    t.daemon = True
-    t.start()
-    t.join()
-
-    time.sleep(2)
-    resp = dwx._get_response_()
-    _lock.release()
-
-    print('here is the resp value: ',resp)
-
-    if resp is not None:
-        #Chi khi gui trade thanh cong - moi gui ve 
-        if '_ticket' in resp and '_response' not in resp:
-            resp['symbol'] = _exec_dict["_symbol"]
-            resp["sl_in_points"] =  _exec_dict["_SL"]
-            resp["tp_in_points"] =  _exec_dict["_TP"]
-
-            return (resp['_ticket'],resp)
 
 def read_and_write_disk(message):
     with open('channel_messages_phu.json','r') as json_file: 
@@ -441,6 +381,31 @@ def new_db_insert(latest_mess_id,trade_id_dict,response_dict_list):
         if (connection.is_connected()):
             connection.close()
             print("MySQL connection for db_insert is closed")
+
+
+def trade_sender_and_findID(_exec_dict):
+    _lock = threading.Lock()
+    _lock.acquire()
+
+    t = threading.Thread(name="Trader",target=trade_sender,args = (_exec_dict,))
+    t.daemon = True
+    t.start()
+    t.join()
+
+    time.sleep(2)
+    resp = dwx._get_response_()
+    _lock.release()
+
+    print('here is the resp value: ',resp)
+
+    if resp is not None:
+        #Chi khi gui trade thanh cong - moi gui ve 
+        if '_ticket' in resp and '_response' not in resp:
+            resp['symbol'] = _exec_dict["_symbol"]
+            resp["sl_in_points"] =  _exec_dict["_SL"]
+            resp["tp_in_points"] =  _exec_dict["_TP"]
+
+            return (resp['_ticket'],resp)
 
 def send_trades_and_insertDB(trades_dict,latest_message_id):
 
