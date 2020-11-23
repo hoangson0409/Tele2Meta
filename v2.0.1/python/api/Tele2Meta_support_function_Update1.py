@@ -319,6 +319,8 @@ def trade_sender_and_findID(_exec_dict):
     resp = dwx._get_response_()
     _lock.release()
 
+    print('here is the resp value: ',resp)
+
     if resp is not None:
         #Chi khi gui trade thanh cong - moi gui ve 
         if '_ticket' in resp and '_response' not in resp:
@@ -425,7 +427,7 @@ def new_db_insert(latest_mess_id,trade_id_dict,response_dict_list):
             TP = i["_tp"]
             SL_in_points = i["sl_in_points"]
             TP_in_points = i['tp_in_points']
-            mySql_insert_query = """INSERT INTO trade_info_static (trade_id,symbol,open_time,open_price,sl,tp,sl_in_points,tp_in_points) VALUES ({a},{b},{c},{e},{f},{g},{h}) """.format(a=trade_id,b=symbol,c=open_time_unix,d=open_price,e=SL,f=TP,g=SL_in_points,h=TP_in_points)
+            mySql_insert_query = """INSERT INTO trade_info_static (trade_id,symbol,open_time,open_price,sl,tp,sl_in_points,tp_in_points) VALUES ({a},'{b}',{c},{d},{e},{f},{g},{h}) """.format(a=trade_id,b=symbol,c=open_time_unix,d=open_price,e=SL,f=TP,g=SL_in_points,h=TP_in_points)
             cursor.execute(mySql_insert_query)
             connection.commit()
         
@@ -433,7 +435,7 @@ def new_db_insert(latest_mess_id,trade_id_dict,response_dict_list):
         cursor.close()
 
     except Error as error:
-        print("Failed to insert record into table mess2trade and trade_info_static. Error {}".format(error))
+        print("Failed to insert record into table mess2trade and/or trade_info_static. Error {}".format(error))
 
     finally:
         if (connection.is_connected()):

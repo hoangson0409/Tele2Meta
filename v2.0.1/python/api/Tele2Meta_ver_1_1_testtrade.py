@@ -148,7 +148,7 @@ global latest_message_id
 latest_message_id = 0
 
 global latest_hour
-latest_hour = 0
+latest_hour = 25
 
 
 while True:
