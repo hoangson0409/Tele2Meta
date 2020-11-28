@@ -19,9 +19,9 @@ from telethon.tl.types import (
 import numpy as np
 import time
 from Tele2Meta_support_function_Update1 import ( 
-    deEmojify, order_type_encoder,symbol_identifier, priceToPoints,text_to_tradedict_2, trade_sender, is_tradesignal,
-    hasNumbers,is_new_message,DateTimeEncoder, email_sender,trade_sender_and_findID,
-    read_and_write_disk,db_insert2,get_open_trade_result_and_insertdb,new_db_insert,is_new_hour,send_trades_and_insertDB)
+    deEmojify, priceToPoints,text2TradeDict, isTradeSignal,
+    hasNumbers,isNewMessage,DateTimeEncoder, emailSender,
+    getMessageAndInsertDB,getOpenTradesAndInsertDB,isNewHour,sendTradesAndInsertDB)
 import smtplib   
 import concurrent.futures
 import mysql.connector
@@ -119,12 +119,12 @@ async def execute(phone,latest_message_id):
     #NEU LA TIN NHAN MOI, LA TRADE SIGNAL: IN THEM VAO CHANNEL MESSAGE, LAY ID
     #NEU LA TIN NHAN MOI, KHONG PHAI TRADE SIGNAL: LAY ID
     #NEU KHONG PHAI TIN NHAN MOI: LAY ID
-    if is_new_message(all_messages,latest_message_id): 
-        read_and_write_disk(all_messages[0]['message'])
+    if isNewMessage(all_messages,latest_message_id): 
+        #read_and_write_disk(all_messages[0]['message'])
 
-        if  is_tradesignal(all_messages,latest_message_id):
+        if  isTradeSignal(all_messages,latest_message_id):
             latest_message_text = all_messages[0]['message']
-            trade_dict_list = text_to_tradedict_2(latest_message_text)
+            trade_dict_list = text2TradeDict(latest_message_text)
             latest_message_id = all_messages[0]['id']
             return (trade_dict_list,latest_message_id,latest_message_text,all_messages[0])
 
@@ -160,15 +160,15 @@ while True:
 
         #at the beginning of new hour
         #get_open_trade_result_and_insertdb inserts into trade_pnl_info table
-        if is_new_hour(latest_hour):
-            t4 = threading.Thread(name="get_open_trade",target=get_open_trade_result_and_insertdb)
+        if isNewHour(latest_hour):
+            t4 = threading.Thread(name="getOpenTradesAndInsertDB",target=getOpenTradesAndInsertDB)
             t4.daemon = True
             t4.start()
             thread_list.append(t4)
 
         #db_insert2 inserts into table messages 
         if result[2] is not None: #if new message is found
-            t3 = threading.Thread(name="dbInsert2",target=db_insert2,args = (latest_message_id,result[3],))
+            t3 = threading.Thread(name="getMessageAndInsertDB",target=getMessageAndInsertDB,args = (latest_message_id,result[3],))
             t3.daemon = True
             t3.start()
             thread_list.append(t3)
@@ -179,13 +179,13 @@ while True:
             latest_message_text = result[2]
 
             # one thread to send email
-            t1 = threading.Thread(name="EmailSender",target=email_sender,args = (deEmojify(latest_message_text),))
+            t1 = threading.Thread(name="emailSender",target=emailSender,args = (deEmojify(latest_message_text),))
             t1.daemon = True
             t1.start()
             thread_list.append(t1)
 
             #one thread to send trades and insert into tables: mess2trade and trade_info_static
-            t2 = threading.Thread(name="send_trades_and_insertDB",target=send_trades_and_insertDB,args = (trades_dict,latest_message_id,))
+            t2 = threading.Thread(name="sendTradesAndInsertDB",target=sendTradesAndInsertDB,args = (trades_dict,latest_message_id,))
             t2.daemon = True
             t2.start()
             thread_list.append(t2)

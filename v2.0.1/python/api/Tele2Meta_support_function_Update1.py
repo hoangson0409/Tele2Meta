@@ -45,7 +45,7 @@ def deEmojify(inputString):
 
 #FUNCTION TO ENCODE BUY AND SELL
 pending_wordlist = ['PENDING','Pending','pending','LIMIT','STOP','Limit','Stop','limit','stop']
-def order_type_encoder(text):
+def orderTypeEncoder(text):
     text = deEmojify(text)
     for i in pending_wordlist:
         if i in text:
@@ -67,7 +67,7 @@ symbol_list = ["EURUSD","EURCHF","EURAUD","EURCAD","EURNZD","EURJPY","EURGBP",
    "CADCHF","CADJPY","CHFJPY","CHFTRY",
    "GBPUSD","GBPJPY","GBPCAD","GBPCHF","GBPAUD","GBPNZD","XAUUSD","US30","USOIL","XTIUSD","GOLD",'USTEC']
 
-def symbol_identifier(text):
+def symbolIdentifier(text):
     for i in symbol_list:
         if i in text:
             if i == 'GOLD':
@@ -102,7 +102,7 @@ def priceToPoints(entry,another,symbol):
 numeric_wordlist = ['ENTRY','Entry','SL','Sl','TP','Tp','TP1', 'TP2','TP3','tp','sl']
 tp_wordlist = ['TP', 'TP1', 'TP2', 'TP3','TP','Tp','tp']
 
-def text_to_tradedict_2(text):
+def text2TradeDict(text):
 
 ##################################################################  
 #preprocessing for text - remove @, remove ':' by space and demojify
@@ -158,14 +158,14 @@ def text_to_tradedict_2(text):
                     SL = np.float(list(idx2.values())[0])
 
         
-        symbol = symbol_identifier(text)
+        symbol = symbolIdentifier(text)
 
         for i in range(number_of_trade):
             TP = np.float(list(tp_dict_list[i].values())[0])
 
             my_trade = {}
             my_trade['_action'] = 'OPEN'  
-            my_trade['_type'] = order_type_encoder(text)
+            my_trade['_type'] = orderTypeEncoder(text)
             my_trade['_symbol'] = symbol
             my_trade['_price'] = 0.0
             my_trade['_SL'] = priceToPoints(entry,SL,symbol)
@@ -182,7 +182,7 @@ def text_to_tradedict_2(text):
 
 ########################################################################################################################
 #FUNCTION TO SEND TRADE#################################################################################################
-def trade_sender(_exec_dict):
+def tradeSender(_exec_dict):
     
     _lock = threading.Lock()
 
@@ -202,7 +202,7 @@ def trade_sender(_exec_dict):
 def hasNumbers(inputString):
     return any(char.isdigit() for char in inputString)
 
-def is_tradesignal(all_messages,latest_message_id):
+def isTradeSignal(all_messages,latest_message_id):
     if  (
         "message" in all_messages[0].keys() and  #Must be a message
         ('ENTRY' in all_messages[0]['message'] or 'Entry' in all_messages[0]['message']) and #MUST HAVE ENTRY or Entry
@@ -216,7 +216,7 @@ def is_tradesignal(all_messages,latest_message_id):
     else:
         return False 
 
-def is_new_message(all_messages,latest_message_id):
+def isNewMessage(all_messages,latest_message_id):
     if  (
         "message" in all_messages[0].keys() and  #Must be a message
         all_messages[0]['id'] != latest_message_id #Must have different ID from the last message
@@ -225,7 +225,7 @@ def is_new_message(all_messages,latest_message_id):
     else:
         return False
 
-def email_sender(email_to_send):
+def emailSender(email_to_send):
     s = smtplib.SMTP('smtp.gmail.com', 587)
     try:
         s.starttls()
@@ -238,7 +238,7 @@ def email_sender(email_to_send):
 
 
 
-def db_insert2(latest_mess_id,all_message): #for table message
+def getMessageAndInsertDB(latest_mess_id,all_message): #for table message
     
     date_received = int(all_message['date'].timestamp())
     content = deEmojify(all_message['message'])
@@ -266,19 +266,19 @@ def db_insert2(latest_mess_id,all_message): #for table message
     finally:
         if (connection.is_connected()):
             connection.close()
-            print("MySQL connection for table messages is closed")
+            print("MySQL connection for table getMessageAndInsertDB is closed")
 
 
 
-def read_and_write_disk(message):
-    with open('channel_messages_phu.json','r') as json_file: 
-        data = json.load(json_file)
-        data.append(message)
-    with open('channel_messages_phu.json', 'w') as outfile:
-        json.dump(data, outfile, cls=DateTimeEncoder)
+# def read_and_write_disk(message):
+#     with open('channel_messages_phu.json','r') as json_file: 
+#         data = json.load(json_file)
+#         data.append(message)
+#     with open('channel_messages_phu.json', 'w') as outfile:
+#         json.dump(data, outfile, cls=DateTimeEncoder)
 
 
-def is_new_hour(latest_hour):
+def isNewHour(latest_hour):
     now = datetime.datetime.now()
     if  (
         now.hour != latest_hour
@@ -287,18 +287,18 @@ def is_new_hour(latest_hour):
     else:
         return False
 
-def get_open_trade_result():
+def getOpenTradesResult():
     _lock = threading.Lock()
     _lock.acquire()
     dwx._DWX_MTX_GET_ALL_OPEN_TRADES_()
     _lock.release()
     
 
-def get_open_trade_result_and_insertdb():
+def getOpenTradesAndInsertDB():
     _lock = threading.Lock()
     _lock.acquire()
 
-    t = threading.Thread(name="get_open_trade_result",target=get_open_trade_result)
+    t = threading.Thread(name="getOpenTradesResult",target=getOpenTradesResult)
     t.daemon = True
     t.start()
     t.join()
@@ -307,9 +307,9 @@ def get_open_trade_result_and_insertdb():
     return_value = dwx._get_response_()
     _lock.release()
 
-    print("this is return_value value from get_open_trade: ", return_value,"no more")
+    print("this is return_value value from getOpenTradesAndInsertDB: ", return_value,"no more")
 
-    if return_value is not None:
+    if return_value is not None and "_trades" in return_value:
         
         try:
             connection = mysql.connector.connect(host='localhost',
@@ -334,12 +334,12 @@ def get_open_trade_result_and_insertdb():
         finally:
             if (connection.is_connected()):
                 connection.close()
-                print("MySQL connection for get_open_trade_result_and_insertdb is closed")
+                print("MySQL connection for getOpenTradesAndInsertDB is closed")
 
 
 
 
-def new_db_insert(latest_mess_id,trade_id_dict,response_dict_list):
+def dbInsert_0(latest_mess_id,trade_id_dict,response_dict_list):
     try:
         connection = mysql.connector.connect(host='localhost',
                                              database='tele3meta',
@@ -380,14 +380,14 @@ def new_db_insert(latest_mess_id,trade_id_dict,response_dict_list):
     finally:
         if (connection.is_connected()):
             connection.close()
-            print("MySQL connection for db_insert is closed")
+            print("MySQL connection for sendTradesAndInsertDB is closed")
 
 
-def trade_sender_and_findID(_exec_dict):
+def sendTradesAndFindID(_exec_dict):
     _lock = threading.Lock()
     _lock.acquire()
 
-    t = threading.Thread(name="Trader",target=trade_sender,args = (_exec_dict,))
+    t = threading.Thread(name="tradeSender",target=tradeSender,args = (_exec_dict,))
     t.daemon = True
     t.start()
     t.join()
@@ -407,14 +407,14 @@ def trade_sender_and_findID(_exec_dict):
 
             return (resp['_ticket'],resp)
 
-def send_trades_and_insertDB(trades_dict,latest_message_id):
+def sendTradesAndInsertDB(trades_dict,latest_message_id):
 
     trade_id_dict = []
     trade_sender_response = []
 
     for i in range(len(trades_dict)):
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(trade_sender_and_findID,trades_dict[i])
+            future = executor.submit(sendTradesAndFindID,trades_dict[i])
             trade_sender_result = future.result()
 
             if trade_sender_result is not None:
@@ -426,7 +426,7 @@ def send_trades_and_insertDB(trades_dict,latest_message_id):
     print("Here is the trade_id_dict: ", trade_id_dict)
     
     if len(trade_id_dict) > 0:
-        t = threading.Thread(name="dbInsert",target=new_db_insert,args = (latest_message_id,trade_id_dict,trade_sender_response,))
+        t = threading.Thread(name="dbInsert",target=dbInsert_0,args = (latest_message_id,trade_id_dict,trade_sender_response,))
         t.daemon = True
         t.start()
         t.join()
