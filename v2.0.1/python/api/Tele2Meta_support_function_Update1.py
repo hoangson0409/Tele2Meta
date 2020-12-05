@@ -11,6 +11,7 @@ from telethon.tl.types import (
     PeerChannel
 )
 import numpy as np
+import pandas as pd
 import time
 import smtplib   
 import concurrent.futures
@@ -20,6 +21,13 @@ from mysql.connector import errorcode
 from django.core.serializers.json import DjangoJSONEncoder
 import datetime
 import concurrent.futures
+from os.path import basename
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.application import MIMEApplication
+import six
+import os
+import matplotlib.pyplot as plt
 '''
 All supporting function for Tele2Meta - Modifiable for  each channel
 '''
@@ -431,6 +439,101 @@ def sendTradesAndInsertDB(trades_dict,latest_message_id):
         t.start()
         t.join()
 
+
+def runQuery(query):
+    cnx = mysql.connector.connect(host = 'localhost', port = '3306', user='shawn', database='tele3meta',
+                     password='password')
+    cursor = cnx.cursor()
+    cursor.execute(query)
+    columns = cursor.description
+    result = []
+    for value in cursor.fetchall():
+        tmp = {}
+        for (index,column) in enumerate(value):
+            tmp[columns[index][0]] = column
+            result.append(tmp)
+    #data = cursor.fetchall()
+    data = pd.DataFrame(result).drop_duplicates(subset=None, keep='first', inplace=False)
+    cnx.disconnect
+    return data
+
+def renderTableAndGenImg(data, col_width=3.0, row_height=0.625, font_size=14,
+                     header_color='#40466e', row_colors=['#f1f1f2', 'w'], edge_color='w',
+                     bbox=[0, 0, 1, 1], header_columns=0,
+                     ax=None, **kwargs):
+    if ax is None:
+        size = (np.array(data.shape[::-1]) + np.array([0, 1])) * np.array([col_width, row_height])
+        fig, ax = plt.subplots(figsize=size)
+        ax.axis('off')
+
+    mpl_table = ax.table(cellText=data.values, bbox=bbox, colLabels=data.columns, **kwargs)
+
+    mpl_table.auto_set_font_size(False)
+    mpl_table.set_fontsize(font_size)
+
+    for k, cell in  six.iteritems(mpl_table._cells):
+        cell.set_edgecolor(edge_color)
+        if k[0] == 0 or k[1] < header_columns:
+            cell.set_text_props(weight='bold', color='w')
+            cell.set_facecolor(header_color)
+        else:
+            cell.set_facecolor(row_colors[k[0]%len(row_colors) ])
+    fig = ax.get_figure()
+    fig.savefig("output.png")
+    return None
+
+def sendEmailWithAttachment(subject, message, from_email, to_email=[], attachment=[]):
+    """
+    :param subject: email subject
+    :param message: Body content of the email (string), can be HTML/CSS or plain text
+    :param from_email: Email address from where the email is sent
+    :param to_email: List of email recipients, example: ["a@a.com", "b@b.com"]
+    :param attachment: List of attachments, exmaple: ["file1.txt", "file2.txt"]
+    """
+    msg = MIMEMultipart()
+    msg['Subject'] = subject
+    msg['From'] = from_email
+    msg['To'] = ", ".join(to_email)
+    msg.attach(MIMEText(message, 'html'))
+
+    for f in attachment:
+        with open(f, 'rb') as a_file:
+            basename = os.path.basename(f)
+            part = MIMEApplication(a_file.read(), Name=basename)
+
+        part['Content-Disposition'] = 'attachment; filename="%s"' % basename
+        msg.attach(part)
+
+#     email = smtplib.SMTP('your-smtp-host-name.com')
+#     email.sendmail(from_email, to_email, msg.as_string())
+    
+    s = smtplib.SMTP('smtp.gmail.com', 587)
+    try:
+        s.starttls()
+        s.login("hoangson0409@gmail.com", "methambeo1997") 
+        s.sendmail(from_email, to_email, msg.as_string())
+    except Exception as err:
+        print("Error while sending email: ",err)
+    finally:
+        s.quit()
+
+def getRecentTradesAndSendEmail(message):
+    """
+    :param subject: email subject
+    :param message: Body content of the email (string), can be HTML/CSS or plain text
+    :param from_email: Email address from where the email is sent
+    :param to_email: List of email recipients, example: ["a@a.com", "b@b.com"]
+    :param attachment: List of attachments, exmaple: ["file1.txt", "file2.txt"]
+    """
+    
+    data = runQuery('''select tis.trade_id, tis.symbol, sec_to_time(unix_timestamp(NOW()) - tis.open_time) as trade_opened_duration,  
+(tis.sl_in_points / 10) as slInPips, (tis.tp_in_points / 10) as tpInPips, tbr.best_profit
+from trade_info_static tis left join trade_best_results tbr on tis.trade_id = tbr.trade_id
+where tis.open_time  > unix_timestamp(now() - interval 48 hour);''')
+    
+    renderTableAndGenImg(data)
+    
+    sendEmailWithAttachment("Trade Info", message, "hoangson0409@gmail.com", ['hoangson.comm.uavsnsw@gmail.com'], attachment=['output.png'])
 #############################################################################################################
 ########### END OF MODIFIABLE PART DEPENDING ON EACH CHANNEL ################################################
 #############################################################################################################

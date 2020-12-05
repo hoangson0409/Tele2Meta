@@ -20,7 +20,7 @@ import numpy as np
 import time
 from Tele2Meta_support_function_Update1 import ( 
     deEmojify, priceToPoints,text2TradeDict, isTradeSignal,
-    hasNumbers,isNewMessage,DateTimeEncoder, emailSender,
+    hasNumbers,isNewMessage,DateTimeEncoder, emailSender, getRecentTradesAndSendEmail,
     getMessageAndInsertDB,getOpenTradesAndInsertDB,isNewHour,sendTradesAndInsertDB)
 import smtplib   
 import concurrent.futures
@@ -50,8 +50,6 @@ shawn_pw = config['Telegram']['shawn_pw']
 
 # Create the client and connect
 client = TelegramClient(username, api_id, api_hash)
-
-
 
 
 async def execute(phone,latest_message_id):
@@ -179,7 +177,7 @@ while True:
             latest_message_text = result[2]
 
             # one thread to send email
-            t1 = threading.Thread(name="emailSender",target=emailSender,args = (deEmojify(latest_message_text),))
+            t1 = threading.Thread(name="getRecentTradesAndSendEmail",target=getRecentTradesAndSendEmail,args = (deEmojify(latest_message_text),))
             t1.daemon = True
             t1.start()
             thread_list.append(t1)
