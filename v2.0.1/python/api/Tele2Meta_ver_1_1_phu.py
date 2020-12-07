@@ -177,7 +177,7 @@ while True:
             latest_message_text = result[2]
 
             # one thread to send email
-            t1 = threading.Thread(name="getRecentTradesAndSendEmail",target=getRecentTradesAndSendEmail,args = (deEmojify(latest_message_text),))
+            t1 = threading.Thread(name="emailSender",target=emailSender,args = (deEmojify(latest_message_text),))
             t1.daemon = True
             t1.start()
             thread_list.append(t1)
