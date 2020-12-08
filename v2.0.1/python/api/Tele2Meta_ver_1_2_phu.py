@@ -18,7 +18,7 @@ from telethon.tl.types import (
 )
 import numpy as np
 import time
-from Tele2Meta_support_function_Update1 import ( 
+from Tele2Meta_support_function_Update2 import ( 
     deEmojify, priceToPoints,text2TradeDict, isTradeSignal,
     hasNumbers,isNewMessage,DateTimeEncoder, emailSender, getRecentTradesAndSendEmail,
     getMessageAndInsertDB,getOpenTradesAndInsertDB,isNewHour,sendTradesAndInsertDB)
@@ -35,7 +35,7 @@ path3 = 'C:\\Users\\hoangson0409\\Downloads\\Tele2Meta\\telegram-analysis-master
 
 os.chdir(path3)
 config = configparser.ConfigParser()
-config.read("config.ini")
+config.read("config_phu.ini")
 
 # Setting configuration values
 api_id = config['Telegram']['api_id']
@@ -66,7 +66,7 @@ async def execute(phone,latest_message_id):
     me = await client.get_me()
 
     user_input_channel = channel
-    entity = user_input_channel
+    entity = PeerChannel(int(user_input_channel))
 
 
     my_channel = await client.get_input_entity(entity)
@@ -150,6 +150,8 @@ latest_hour = 25
 
 
 while True:
+    connection = mysql.connector.connect(host = 'localhost', port = '3306', user='shawn', database='tele3meta',
+                                         password='password')
     with client:
         
         result = client.loop.run_until_complete(execute(phone,latest_message_id))
@@ -159,14 +161,14 @@ while True:
         #at the beginning of new hour
         #get_open_trade_result_and_insertdb inserts into trade_pnl_info table
         if isNewHour(latest_hour):
-            t4 = threading.Thread(name="getOpenTradesAndInsertDB",target=getOpenTradesAndInsertDB)
+            t4 = threading.Thread(name="getOpenTradesAndInsertDB",target=getOpenTradesAndInsertDB,args = (connection,))
             t4.daemon = True
             t4.start()
             thread_list.append(t4)
 
         #db_insert2 inserts into table messages 
         if result[2] is not None: #if new message is found
-            t3 = threading.Thread(name="getMessageAndInsertDB",target=getMessageAndInsertDB,args = (latest_message_id,result[3],))
+            t3 = threading.Thread(name="getMessageAndInsertDB",target=getMessageAndInsertDB,args = (latest_message_id,result[3],connection,))
             t3.daemon = True
             t3.start()
             thread_list.append(t3)
@@ -177,13 +179,13 @@ while True:
             latest_message_text = result[2]
 
             # one thread to send email
-            t1 = threading.Thread(name="getRecentTradesAndSendEmail",target=getRecentTradesAndSendEmail,args = (deEmojify(latest_message_text),))
+            t1 = threading.Thread(name="getRecentTradesAndSendEmail",target=getRecentTradesAndSendEmail,args = (deEmojify(latest_message_text),connection,))
             t1.daemon = True
             t1.start()
             thread_list.append(t1)
 
             #one thread to send trades and insert into tables: mess2trade and trade_info_static
-            t2 = threading.Thread(name="sendTradesAndInsertDB",target=sendTradesAndInsertDB,args = (trades_dict,latest_message_id,))
+            t2 = threading.Thread(name="sendTradesAndInsertDB",target=sendTradesAndInsertDB,args = (trades_dict,latest_message_id,connection,))
             t2.daemon = True
             t2.start()
             thread_list.append(t2)
@@ -191,7 +193,9 @@ while True:
         latest_hour = datetime.now().hour
         for thr in thread_list:
                 thr.join()
-        time.sleep(30)
+
+    connection.close()
+    time.sleep(30)
 
     continue
 

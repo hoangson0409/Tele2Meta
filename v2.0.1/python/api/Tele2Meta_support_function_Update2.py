@@ -246,17 +246,17 @@ def emailSender(email_to_send):
 
 
 
-def getMessageAndInsertDB(latest_mess_id,all_message): #for table message
+def getMessageAndInsertDB(latest_mess_id,all_message,connection): #for table message
     
     date_received = int(all_message['date'].timestamp())
     content = deEmojify(all_message['message'])
     raw_message = json.dumps(all_message,sort_keys=True,indent=1,cls=DjangoJSONEncoder)
     
     try:
-        connection = mysql.connector.connect(host='localhost',
-                                             database='tele3meta',
-                                             user='shawn',
-                                             password='password')
+        # connection = mysql.connector.connect(host='localhost',
+        #                                      database='tele3meta',
+        #                                      user='shawn',
+        #                                      password='password')
         
 
         cursor = connection.cursor()
@@ -271,19 +271,10 @@ def getMessageAndInsertDB(latest_mess_id,all_message): #for table message
     except Error as error:
         print("Failed to insert record into table messages. Error {}".format(error))
 
-    finally:
-        if (connection.is_connected()):
-            connection.close()
-            print("MySQL connection for table getMessageAndInsertDB is closed")
-
-
-
-# def read_and_write_disk(message):
-#     with open('channel_messages_phu.json','r') as json_file: 
-#         data = json.load(json_file)
-#         data.append(message)
-#     with open('channel_messages_phu.json', 'w') as outfile:
-#         json.dump(data, outfile, cls=DateTimeEncoder)
+    # finally:
+    #     if (connection.is_connected()):
+    #         connection.close()
+    #         print("MySQL connection for table getMessageAndInsertDB is closed")
 
 
 def isNewHour(latest_hour):
@@ -302,7 +293,7 @@ def getOpenTradesResult():
     _lock.release()
     
 
-def getOpenTradesAndInsertDB():
+def getOpenTradesAndInsertDB(connection):
     _lock = threading.Lock()
     _lock.acquire()
 
@@ -320,10 +311,10 @@ def getOpenTradesAndInsertDB():
     if return_value is not None and "_trades" in return_value:
         
         try:
-            connection = mysql.connector.connect(host='localhost',
-                                             database='tele3meta',
-                                             user='shawn',
-                                             password='password')
+            # connection = mysql.connector.connect(host='localhost',
+            #                                  database='tele3meta',
+            #                                  user='shawn',
+            #                                  password='password')
             cursor = connection.cursor()
             
             for i in return_value["_trades"]:
@@ -339,20 +330,20 @@ def getOpenTradesAndInsertDB():
         except Error as error:
             print("Failed to insert record into table trade_info_pnl. Error {}".format(error))
 
-        finally:
-            if (connection.is_connected()):
-                connection.close()
-                print("MySQL connection for getOpenTradesAndInsertDB is closed")
+        # finally:
+        #     if (connection.is_connected()):
+        #         connection.close()
+        #         print("MySQL connection for getOpenTradesAndInsertDB is closed")
 
 
 
 
-def dbInsert_0(latest_mess_id,trade_id_dict,response_dict_list):
+def dbInsert_0(latest_mess_id,trade_id_dict,response_dict_list,connection):
     try:
-        connection = mysql.connector.connect(host='localhost',
-                                             database='tele3meta',
-                                             user='shawn',
-                                             password='password')
+        # connection = mysql.connector.connect(host='localhost',
+        #                                      database='tele3meta',
+        #                                      user='shawn',
+        #                                      password='password')
         
 
         cursor = connection.cursor()
@@ -385,10 +376,10 @@ def dbInsert_0(latest_mess_id,trade_id_dict,response_dict_list):
     except Error as error:
         print("Failed to insert record into table mess2trade and/or trade_info_static. Error {}".format(error))
 
-    finally:
-        if (connection.is_connected()):
-            connection.close()
-            print("MySQL connection for sendTradesAndInsertDB is closed")
+    # finally:
+    #     if (connection.is_connected()):
+    #         connection.close()
+    #         print("MySQL connection for sendTradesAndInsertDB is closed")
 
 
 def sendTradesAndFindID(_exec_dict):
@@ -415,7 +406,7 @@ def sendTradesAndFindID(_exec_dict):
 
             return (resp['_ticket'],resp)
 
-def sendTradesAndInsertDB(trades_dict,latest_message_id):
+def sendTradesAndInsertDB(trades_dict,latest_message_id,connection):
 
     trade_id_dict = []
     trade_sender_response = []
@@ -434,116 +425,124 @@ def sendTradesAndInsertDB(trades_dict,latest_message_id):
     print("Here is the trade_id_dict: ", trade_id_dict)
     
     if len(trade_id_dict) > 0:
-        t = threading.Thread(name="dbInsert",target=dbInsert_0,args = (latest_message_id,trade_id_dict,trade_sender_response,))
+        t = threading.Thread(name="dbInsert",target=dbInsert_0,args = (latest_message_id,trade_id_dict,trade_sender_response,connection,))
         t.daemon = True
         t.start()
         t.join()
 
 
 
-# def runQuery(query):
-#     cnx = mysql.connector.connect(host = 'localhost', port = '3306', user='shawn', database='tele3meta',
-#                      password='password')
-#     cursor = cnx.cursor()
-#     cursor.execute(query)
-#     columns = cursor.description
-#     result = []
-#     for value in cursor.fetchall():
-#         tmp = {}
-#         for (index,column) in enumerate(value):
-#             tmp[columns[index][0]] = column
-#             result.append(tmp)
-#     #data = cursor.fetchall()
-#     data = pd.DataFrame(result).drop_duplicates(subset=None, keep='first', inplace=False)
-#     cnx.disconnect
-#     return data
+def runQuery(query,cnx):
+        # cnx = mysql.connector.connect(host = 'localhost', port = '3306', user='shawn', database='tele3meta',
+        #                                  password='password')
+        # cursor = cnx.cursor()
+        cursor = cnx.cursor()
+        try:
+            cursor.execute(query)
+            columns = cursor.description
+            result = []
+            for value in cursor.fetchall():
+                    tmp = {}
+                    for (index,column) in enumerate(value):
+                            tmp[columns[index][0]] = column
+                            result.append(tmp)
+            #data = cursor.fetchall()
+            data = pd.DataFrame(result).drop_duplicates(subset=None, keep='first', inplace=False)
+            cursor.close()
+            return data
+
+        except Error as error:
+            print("Failed to execute quezi. Error {}".format(error))
 
 
 
-# def renderTableAndGenImg(data, col_width=3.0, row_height=0.625, font_size=14,
-#                      header_color='#40466e', row_colors=['#f1f1f2', 'w'], edge_color='w',
-#                      bbox=[0, 0, 1, 1], header_columns=0,
-#                      ax=None, **kwargs):
-#     if ax is None:
-#         size = (np.array(data.shape[::-1]) + np.array([0, 1])) * np.array([col_width, row_height])
-#         fig, ax = plt.subplots(figsize=size)
-#         ax.axis('off')
+def renderTableAndGenImg(data, col_width=3.0, row_height=0.625, font_size=14,
+                     header_color='#40466e', row_colors=['#f1f1f2', 'w'], edge_color='w',
+                     bbox=[0, 0, 1, 1], header_columns=0,
+                     ax=None, **kwargs):
+    if ax is None:
+        size = (np.array(data.shape[::-1]) + np.array([0, 1])) * np.array([col_width, row_height])
+        fig, ax = plt.subplots(figsize=size)
+        ax.axis('off')
 
-#     mpl_table = ax.table(cellText=data.values, bbox=bbox, colLabels=data.columns, **kwargs)
+    mpl_table = ax.table(cellText=data.values, bbox=bbox, colLabels=data.columns, **kwargs)
 
-#     mpl_table.auto_set_font_size(False)
-#     mpl_table.set_fontsize(font_size)
+    mpl_table.auto_set_font_size(False)
+    mpl_table.set_fontsize(font_size)
 
-#     for k, cell in  six.iteritems(mpl_table._cells):
-#         cell.set_edgecolor(edge_color)
-#         if k[0] == 0 or k[1] < header_columns:
-#             cell.set_text_props(weight='bold', color='w')
-#             cell.set_facecolor(header_color)
-#         else:
-#             cell.set_facecolor(row_colors[k[0]%len(row_colors) ])
-#     fig = ax.get_figure()
-#     fig.savefig("output.png")
-#     return None
+    for k, cell in  six.iteritems(mpl_table._cells):
+        cell.set_edgecolor(edge_color)
+        if k[0] == 0 or k[1] < header_columns:
+            cell.set_text_props(weight='bold', color='w')
+            cell.set_facecolor(header_color)
+        else:
+            cell.set_facecolor(row_colors[k[0]%len(row_colors) ])
+    fig = ax.get_figure()
+    fig.savefig("output.png")
+    return None
 
-# def sendEmailWithAttachment(subject, message, from_email, to_email=[], attachment=[]):
-#     """
-#     :param subject: email subject
-#     :param message: Body content of the email (string), can be HTML/CSS or plain text
-#     :param from_email: Email address from where the email is sent
-#     :param to_email: List of email recipients, example: ["a@a.com", "b@b.com"]
-#     :param attachment: List of attachments, exmaple: ["file1.txt", "file2.txt"]
-#     """
-#     msg = MIMEMultipart()
-#     msg['Subject'] = subject
-#     msg['From'] = from_email
-#     msg['To'] = ", ".join(to_email)
-#     msg.attach(MIMEText(message, 'html'))
+def sendEmailWithAttachment(subject, message, from_email, to_email=[], attachment=[]):
+    """
+    :param subject: email subject
+    :param message: Body content of the email (string), can be HTML/CSS or plain text
+    :param from_email: Email address from where the email is sent
+    :param to_email: List of email recipients, example: ["a@a.com", "b@b.com"]
+    :param attachment: List of attachments, exmaple: ["file1.txt", "file2.txt"]
+    """
+    msg = MIMEMultipart()
+    msg['Subject'] = subject
+    msg['From'] = from_email
+    msg['To'] = ", ".join(to_email)
+    msg.attach(MIMEText(message, 'html'))
 
-#     for f in attachment:
-#         with open(f, 'rb') as a_file:
-#             basename = os.path.basename(f)
-#             part = MIMEApplication(a_file.read(), Name=basename)
+    for f in attachment:
+        with open(f, 'rb') as a_file:
+            basename = os.path.basename(f)
+            part = MIMEApplication(a_file.read(), Name=basename)
 
-#         part['Content-Disposition'] = 'attachment; filename="%s"' % basename
-#         msg.attach(part)
+        part['Content-Disposition'] = 'attachment; filename="%s"' % basename
+        msg.attach(part)
 
-# #     email = smtplib.SMTP('your-smtp-host-name.com')
-# #     email.sendmail(from_email, to_email, msg.as_string())
+#     email = smtplib.SMTP('your-smtp-host-name.com')
+#     email.sendmail(from_email, to_email, msg.as_string())
     
-#     s = smtplib.SMTP('smtp.gmail.com', 587)
-#     try:
-#         s.starttls()
-#         s.login("hoangson0409@gmail.com", "methambeo1997") 
-#         s.sendmail(from_email, to_email, msg.as_string())
-#     except Exception as err:
-#         print("Error while sending email: ",err)
-#     finally:
-#         s.quit()
+    s = smtplib.SMTP('smtp.gmail.com', 587)
+    try:
+        s.starttls()
+        s.login("hoangson0409@gmail.com", "methambeo1997") 
+        s.sendmail(from_email, to_email, msg.as_string())
+    except Exception as err:
+        print("Error while sending email: ",err)
+    finally:
+        s.quit()
 
 
 
-# def getRecentTradesAndSendEmail(message):
-#     """
-#     :param subject: email subject
-#     :param message: Body content of the email (string), can be HTML/CSS or plain text
-#     :param from_email: Email address from where the email is sent
-#     :param to_email: List of email recipients, example: ["a@a.com", "b@b.com"]
-#     :param attachment: List of attachments, exmaple: ["file1.txt", "file2.txt"]
-#     """
-    
-    
-#     query = '''select tis.trade_id, tis.symbol, sec_to_time(unix_timestamp(NOW()) - tis.open_time) as trade_opened_duration,  
-# (tis.sl_in_points / 10) as slInPips, (tis.tp_in_points / 10) as tpInPips, tbr.best_profit
-# from trade_info_static tis left join trade_best_results tbr on tis.trade_id = tbr.trade_id
-# where tis.open_time  > unix_timestamp(now() - interval 48 hour);'''
+def getRecentTradesAndSendEmail(message,cnx):
+        """
+        :param subject: email subject
+        :param message: Body content of the email (string), can be HTML/CSS or plain text
+        :param from_email: Email address from where the email is sent
+        :param to_email: List of email recipients, example: ["a@a.com", "b@b.com"]
+        :param attachment: List of attachments, exmaple: ["file1.txt", "file2.txt"]
+        """
+        query = '''select tis.trade_id, tis.symbol, sec_to_time(unix_timestamp(NOW()) - tis.open_time) as trade_opened_duration,  
+        (tis.sl_in_points / 10) as slInPips, (tis.tp_in_points / 10) as tpInPips, tbr.best_profit
+        from trade_info_static tis left join trade_best_results tbr on tis.trade_id = tbr.trade_id
+        where tis.open_time  > unix_timestamp(now() - interval 48 hour);'''
 
-#     print("this is data pulled from mysql: ",data)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(runQuery,query,cnx)
+                data = future.result()
 
-#     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-#             future = executor.submit(renderTableAndGenImg,data)
-#             none = future.result()
-   
-#     sendEmailWithAttachment("Trade Info", message, "hoangson0409@gmail.com", ['hoangson.comm.uavsnsw@gmail.com'], attachment=['output.png'])
+        print("this is data pulled from mysql: ",data)
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(renderTableAndGenImg,data)
+                none = future.result()
+
+        sendEmailWithAttachment("Trade Info", "hello", "hoangson0409@gmail.com", ['hoangson.comm.uavsnsw@gmail.com'], attachment=['output.png'])
+
 #############################################################################################################
 ########### END OF MODIFIABLE PART DEPENDING ON EACH CHANNEL ################################################
 #############################################################################################################
