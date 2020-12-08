@@ -541,7 +541,7 @@ def getRecentTradesAndSendEmail(message,cnx):
                 future = executor.submit(renderTableAndGenImg,data)
                 none = future.result()
 
-        sendEmailWithAttachment("Trade Info", "hello", "hoangson0409@gmail.com", ['hoangson.comm.uavsnsw@gmail.com'], attachment=['output.png'])
+        sendEmailWithAttachment("Trade Info", message, "hoangson0409@gmail.com", ['hoangson.comm.uavsnsw@gmail.com'], attachment=['output.png'])
 
 #############################################################################################################
 ########### END OF MODIFIABLE PART DEPENDING ON EACH CHANNEL ################################################
