@@ -18,7 +18,7 @@ from telethon.tl.types import (
 )
 import numpy as np
 import time
-from Tele2Meta_support_function_Update2_copy import ( 
+from Tele2Meta_support_function_Update3 import ( 
     deEmojify, priceToPoints,text2TradeDict, isTradeSignal,
     hasNumbers,isNewMessage,DateTimeEncoder, emailSender, getRecentTradesAndSendEmail,
     getMessageAndInsertDB,getOpenTradesAndInsertDB,isNewHour,sendTradesAndInsertDB)
@@ -35,7 +35,7 @@ path3 = 'C:\\Users\\hoangson0409\\Downloads\\Tele2Meta\\telegram-analysis-master
 
 os.chdir(path3)
 config = configparser.ConfigParser()
-config.read("config.ini")
+config.read("config_phu.ini")
 
 # Setting configuration values
 api_id = config['Telegram']['api_id']
@@ -66,7 +66,7 @@ async def execute(phone,latest_message_id):
     me = await client.get_me()
 
     user_input_channel = channel
-    entity = user_input_channel
+    entity = PeerChannel(int(user_input_channel))
 
 
     my_channel = await client.get_input_entity(entity)
@@ -154,6 +154,7 @@ dbconfig = {
   "database":"tele3meta",
   "password":"password"
 }
+
 import mysql.connector.pooling
 cnxpool = mysql.connector.pooling.MySQLConnectionPool(pool_name = "mypool",
                                                       pool_size = 5,
