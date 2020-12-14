@@ -522,7 +522,9 @@ def getRecentTradesAndSendEmail(message,cnxpool):
         query = '''select tis.trade_id, tis.symbol, sec_to_time(unix_timestamp(NOW()) - tis.open_time) as trade_opened_duration,  
         (tis.sl_in_points / 10) as slInPips, (tis.tp_in_points / 10) as tpInPips, tbr.best_profit
         from trade_info_static tis left join trade_best_results tbr on tis.trade_id = tbr.trade_id
-        where tis.open_time  > unix_timestamp(now() - interval 48 hour);'''
+        where tis.open_time  > unix_timestamp(now() - interval 48 hour) and 
+        exists (SELECT * FROM mess2trade mt
+                        WHERE mt.trade_id = tis.trade_id);'''
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
                 future = executor.submit(runQuery,query,cnxpool)
