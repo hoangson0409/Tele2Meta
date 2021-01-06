@@ -1,7 +1,7 @@
 import os
 
 #path2 = 'C:\\Users\\Admin\\Downloads\\dwx-zeromq-connector-master\\v2.0.1\\python\\api'
-path2 = 'C:\\Users\\hoangson0409\\Downloads\\Tele2Meta\\v2.0.1\\python\\api'
+path2 = 'D:\\tele2meta_folder\\Tele2Meta\\v2.0.1\python\\api'
 os.chdir(path2)
 
 from DWX_ZeroMQ_Connector_v2_0_1_RC8 import DWX_ZeroMQ_Connector
@@ -30,7 +30,7 @@ from mysql.connector import errorcode
 
 # Reading Configs
 #path3 = 'C:\\Users\\Admin\\Downloads\\dwx-zeromq-connector-master\\telegram-analysis-master'
-path3 = 'C:\\Users\\hoangson0409\\Downloads\\Tele2Meta\\telegram-analysis-master'
+path3 = 'D:\\tele2meta_folder\\Tele2Meta\\telegram-analysis-master'
 
 
 os.chdir(path3)
